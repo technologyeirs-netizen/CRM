@@ -33,31 +33,50 @@ if (missingEnvVars.length > 0) {
 
 const app = express();
 
-// Enhanced CORS for Vercel deployment
+// =========================
+// CORS
+// =========================
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://192.168.0.147:3000',
-      'https://eirs-technology-crm.vercel.app',
-      'https://crm.eirstechnology.com',
-      /^https:\/\/.*\.vercel\.app$/
-    ];
-    
-    if (!origin || allowedOrigins.some(allowed => 
-      allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
-    )) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed'));
+  origin(origin, callback) {
+    // Allow Postman, curl, server-to-server requests
+    if (!origin) {
+      return callback(null, true);
     }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
+
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  exposedHeaders: ['Content-Type', 'Authorization']
+
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+  ],
+
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+  ],
 };
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Apply CORS middleware to all routes
 app.use(cors(corsOptions));
