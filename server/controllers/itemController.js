@@ -1,6 +1,6 @@
 const Item = require('../models/Item');
 // FIX: Model path updated to match your file name 'WebsiteProduct'
-const WebsiteProduct = require('../models/products'); 
+const WebsiteProduct = require('../models/Products'); 
 
 exports.getItems = async (req, res) => {
   try {
