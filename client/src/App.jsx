@@ -19,7 +19,7 @@ import ViewInvoicePage from "./pages/sales/ViewInvoicePage";
 import ViewCreditNotePage from "./pages/creditNote/ViewCreditNotePage";
 import EditInvoicePage from "./pages/sales/EditInvoicePage";
 import CreateSalesInvoicePage from "./pages/sales/CreateInvoice";
-import DebitNotePage from "./pages/sales/DebitNote.";
+import DebitNotePage from "./pages/sales/DebitNote";
 import CreditInvoiceNote from "./pages/creditNote/CreditNoteInvoice";
 import CategoryPage from "./pages/inventory/CategoryPage";
 import GodownsPage from "./pages/inventory/GodownsPage";
