@@ -3,17 +3,15 @@ import axios from 'axios';
 // Determine API base URL based on environment
 const getAPIUrl = () => {
   const envApiUrl = import.meta.env.VITE_API_BASE_URL;
+  
+  // If explicitly set in .env, use it
   if (envApiUrl) {
     return envApiUrl;
   }
 
-  // In development, use relative path (proxied by Vite)
-  if (import.meta.env.MODE === 'development') {
-    return '/api';
-  }
-
-  // In production, default to deployed CRM API on Vercel
-  return 'https://eirs-technology-crm.vercel.app/api';
+  // Always use relative path (works for both localhost and production domains)
+  // This avoids CORS issues by keeping frontend and API on the same origin
+  return '/api';
 };
 
 const API = axios.create({

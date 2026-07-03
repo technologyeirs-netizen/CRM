@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const Employee = require('../models/Employee');
+const bootstrapAdminFromEnv = require('../config/bootstrapAdmin');
 
 // @desc    Register a new admin/agent
 // @route   POST /api/auth/register
@@ -29,6 +31,7 @@ exports.register = async (req, res) => {
 
 // @desc    Login user
 // @route   POST /api/auth/login
+// @route   POST /api/auth/signin
 // @access  Public
 exports.login = async (req, res) => {
   try {
@@ -39,26 +42,108 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
-    if (!user || !user.isActive) {
+    console.log(`[LOGIN] Attempting login for: ${normalizedEmail}`);
+
+    const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const adminPassword = String(process.env.ADMIN_PASSWORD || '').trim();
+    const isAdminAlias = normalizedEmail === 'admin@eirtech.com' || normalizedEmail === adminEmail;
+
+    const [user, employee] = await Promise.all([
+      User.findOne({ email: normalizedEmail }).select('+password'),
+      Employee.findOne({
+        email: normalizedEmail,
+        isDeleted: { $ne: true },
+      }).select('+password'),
+    ]);
+
+    const syncEmployeeUser = async (sourceEmployee) => {
+      let authUser = user;
+
+      if (!authUser) {
+        authUser = await User.create({
+          name: sourceEmployee.name,
+          email: sourceEmployee.email,
+          password,
+          role: 'employee',
+          isAdmin: false,
+          isActive: true,
+        });
+      } else {
+        authUser.name = sourceEmployee.name || authUser.name;
+        authUser.email = sourceEmployee.email || authUser.email;
+        authUser.password = password;
+        authUser.role = 'employee';
+        authUser.isAdmin = false;
+        authUser.isActive = true;
+        await authUser.save();
+      }
+
+      return authUser;
+    };
+
+    if (user) {
+      const userPasswordMatch = await user.matchPassword(password);
+      if (userPasswordMatch) {
+        const isEmployeeLogin = user.role === 'employee' || Boolean(employee);
+
+        if (isEmployeeLogin) {
+          const authUser = await syncEmployeeUser(employee || { name: user.name, email: user.email });
+          const token = authUser.getSignedJwtToken();
+          console.log(`[LOGIN] ✓ Successful login for: ${normalizedEmail}`);
+
+          return res.status(200).json({
+            success: true,
+            message: 'Logged in successfully',
+            token,
+            data: { id: authUser._id, name: authUser.name, email: authUser.email, role: authUser.role, isAdmin: authUser.isAdmin },
+          });
+        }
+      }
+    }
+
+    if (isAdminAlias && adminPassword && password === adminPassword) {
+      await bootstrapAdminFromEnv();
+
+      const adminUser = await User.findOne({ email: adminEmail || normalizedEmail }).select('+password');
+      if (adminUser && (await adminUser.matchPassword(password))) {
+        const token = adminUser.getSignedJwtToken();
+        console.log(`[LOGIN] ✓ Successful admin alias login for: ${normalizedEmail}`);
+
+        return res.status(200).json({
+          success: true,
+          message: 'Logged in successfully',
+          token,
+          data: { id: adminUser._id, name: adminUser.name, email: adminUser.email, role: adminUser.role, isAdmin: adminUser.isAdmin },
+        });
+      }
+    }
+
+    if (!employee || !employee.password) {
+      console.log(`[LOGIN] User not found or inactive: ${normalizedEmail}`);
       return res.status(401).json({ success: false, message: 'Invalid credentials or account deactivated' });
     }
 
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
+    const employeePasswordMatch = await employee.matchPassword(password);
+    if (!employeePasswordMatch) {
+      console.log(`[LOGIN] Password mismatch for employee: ${normalizedEmail}`);
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    const token = user.getSignedJwtToken();
+    const authUser = await syncEmployeeUser(employee);
+
+    const token = authUser.getSignedJwtToken();
+    console.log(`[LOGIN] ✓ Successful login for: ${normalizedEmail}`);
 
     res.status(200).json({
       success: true,
       message: 'Logged in successfully',
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      data: { id: authUser._id, name: authUser.name, email: authUser.email, role: authUser.role, isAdmin: authUser.isAdmin },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[authController.login] ❌ Error:', error.message);
+    console.error('[authController.login] Stack:', error.stack);
+    res.status(500).json({ success: false, message: error.message || 'Server error during login' });
   }
 };
 

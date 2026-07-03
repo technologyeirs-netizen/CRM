@@ -14,15 +14,35 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
-      const { data } = await API.post('/auth/login', { email, password });
-      localStorage.setItem('crm_token', data.token);
-      localStorage.setItem('crm_user', JSON.stringify(data.user));
-      setUser(data.user);
-      toast.success(`Welcome back, ${data.user.name}!`);
-      return { success: true };
+      const { data } = await API.post('/auth/signin', { email, password });
+      const token = data?.token;
+      const backendUser = data?.data || {};
+
+      if (!token || !backendUser?.id) {
+        throw new Error('Invalid login response from server');
+      }
+
+      const normalizedUser = {
+        id: backendUser.id,
+        name: backendUser.name,
+        email: backendUser.email,
+        isAdmin: Boolean(backendUser.isAdmin || backendUser.role === 'admin'),
+        role: backendUser.role || 'admin',
+      };
+
+      localStorage.setItem('crm_token', token);
+      localStorage.setItem('crm_user', JSON.stringify(normalizedUser));
+      setUser(normalizedUser);
+      toast.success(`Welcome back, ${normalizedUser.name}!`);
+      return {
+        success: true,
+        redirectTo: normalizedUser.role === 'employee' ? '/employee-dashboard' : '/dashboard',
+        user: normalizedUser,
+      };
     } catch (error) {
-      const msg = error.response?.data?.message || 'Login failed';
+      const msg = error.response?.data?.message || error.message || 'Login failed';
       toast.error(msg);
+      console.error('Login error:', error);
       return { success: false, message: msg };
     } finally {
       setLoading(false);
@@ -36,10 +56,20 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+  const updateUser = useCallback((updates) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const nextUser = { ...prev, ...updates };
+      localStorage.setItem('crm_user', JSON.stringify(nextUser));
+      return nextUser;
+    });
+  }, []);
+
+  const isAdmin = Boolean(user?.isAdmin || user?.role === 'admin');
+  const isEmployee = user?.role === 'employee';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, isAdmin, isEmployee }}>
       {children}
     </AuthContext.Provider>
   );
