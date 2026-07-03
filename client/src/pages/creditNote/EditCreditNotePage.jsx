@@ -12,7 +12,7 @@ import { creditNoteService } from "../../services/creditNoteService";
 import InvoiceHeader from "../../components/invoice/InvoiceHeader";
 import SalesInvoicePartySection from "../../components/invoice/SalesInvoicePartySection";
 import InvoiceItemsTable from "../../components/invoice/InvoiceItemsTable";
-import InvoiceNotesSection from "../../components/invoice/InvoiceNotesSection";
+import InvoiceNotesSection from "../../components/invoice/invoiceNotesSection";
 import InvoiceFloatingHelp from "../../components/invoice/InvoiceFloatingHelp";
 
 // import CreditNoteMetaSection from "../../components/creditNote/CreditNoteMetaSection";

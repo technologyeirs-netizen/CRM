@@ -17,7 +17,7 @@ import InvoiceMetaSection from "../../components/invoice/InvoiceMetaSection";
 import InvoiceItemsTable from "../../components/invoice/InvoiceItemsTable";
 import { useInvoiceCalculations } from "../../hooks/useInvoiceCalculations";
 import InvoiceSummarySection from "../../components/invoice/InvoiceSummarySection";
-import InvoiceNotesSection from "../../components/invoice/InvoiceNotesSection";
+import InvoiceNotesSection from "../../components/invoice/invoiceNotesSection";
 import InvoiceBankDetailsSection from "../../components/invoice/InvoiceBankDetailsSection";
 import InvoiceItemModal from "../../components/invoice/InvoiceItemModal";
 import InvoiceGodownModal from "../../components/invoice/InvoiceGodownModal";

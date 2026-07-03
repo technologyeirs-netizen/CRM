@@ -10,7 +10,7 @@ import { deliveryChallanService } from "../../services/deliveryChallanService";
 
 import InvoiceHeader from "../../components/invoice/InvoiceHeader";
 import SalesInvoicePartySection from "../../components/invoice/SalesInvoicePartySection";
-import InvoiceNotesSection from "../../components/invoice/InvoiceNotesSection";
+import InvoiceNotesSection from "../../components/invoice/invoiceNotesSection";
 import InvoiceBankDetailsSection from "../../components/invoice/InvoiceBankDetailsSection";
 import InvoiceItemModal from "../../components/invoice/InvoiceItemModal";
 import InvoiceGodownModal from "../../components/invoice/InvoiceGodownModal";
