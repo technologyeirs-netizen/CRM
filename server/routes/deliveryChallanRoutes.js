@@ -8,7 +8,7 @@ const {
   getSingleDeliveryChallan,
   updateDeliveryChallan,
   deleteDeliveryChallan,
-} = require("../controllers/deliveryChallanController");
+} = require("../controllers/DeliveryChallanController");
 
 // ============================================
 // CREATE
