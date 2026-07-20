@@ -46,6 +46,7 @@ const SavedQuotationsPage = lazy(() => import("./pages/SavedQuotationsPage"));
 const CustomerDetailsPage = lazy(() => import("./pages/CustomerDetailsPage"));
 const PurchaseHistoryPage = lazy(() => import("./pages/PurchaseHistoryPage"));
 const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
+const FsmRequestsPage = lazy(() => import("./pages/FsmRequestsPage"));
 const EmployeeDashboardPage = lazy(
   () => import("./pages/EmployeeDashboardPage"),
 );
@@ -215,6 +216,7 @@ function App() {
                   element={<Navigate to="/service-management" replace />}
                 />
                 <Route path="employees" element={<EmployeesPage />} />
+                <Route path="fsm-requests" element={<FsmRequestsPage />} />
                 <Route path="distribution" element={<DistributionPage />} />
                 <Route path="campaigns" element={<CampaignsPage />} />
                 {websiteSyncModulesEnabled && (

@@ -17,6 +17,7 @@ import {
   FiChevronRight,
   FiLayers ,
   FiTruck,
+  FiUserCheck,
 } from 'react-icons/fi';
 
 import { useAuth } from '../../context/AuthContext';
@@ -158,6 +159,12 @@ const getNavItems = (role) => {
       to: '/employees',
       label: 'Employees',
       icon: FiBriefcase,
+    },
+
+    {
+      to: '/fsm-requests',
+      label: 'FSM Requests',
+      icon: FiUserCheck,
     },
 
     {
