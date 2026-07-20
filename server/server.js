@@ -132,6 +132,8 @@ app.use('/api/campaigns', require('./routes/campaignRoutes'));
 app.use('/api/quotations', require('./routes/quotationRoutes'));
 app.use('/api/website-sync', require('./routes/websiteSyncRoutes'));
 app.use("/api/sales-settings",require("./routes/salesSettingRoutes"));
+app.use('/api/fsm', require('./routes/fsmRoutes'));
+app.use('/api/fsm-admin', require('./routes/fsmAdminRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
