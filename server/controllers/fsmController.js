@@ -115,20 +115,64 @@ exports.uploadDocuments = async (req, res) => {
 exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
+
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
     }
 
-    const fsmUser = await FsmUser.findOne({ email: String(email).trim().toLowerCase() });
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    const fsmUser = await FsmUser.findOne({ email: normalizedEmail });
+
     if (!fsmUser) {
-      return res.status(404).json({ success: false, message: 'No FSM account found with this email. Please sign up first.' });
+      return res.status(404).json({
+        success: false,
+        message: 'No FSM account found with this email. Please sign up first.',
+      });
     }
 
-    await generateAndSendOtpToEmail(email);
+    // Documents upload nahi hue
+    if (!fsmUser.documentsSubmitted) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please complete document upload first.',
+      });
+    }
 
-    res.status(200).json({ success: true, message: 'OTP sent to your email' });
+    // Pending
+    if (fsmUser.status === 'pending') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is pending admin approval.',
+      });
+    }
+
+    // Rejected
+    if (fsmUser.status === 'rejected') {
+      return res.status(403).json({
+        success: false,
+        message:
+          fsmUser.rejectionReason
+            ? `Your account has been rejected. Reason: ${fsmUser.rejectionReason}`
+            : 'Your account has been rejected.',
+      });
+    }
+
+    // Approved user only
+    await generateAndSendOtpToEmail(normalizedEmail);
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP sent to your email.',
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -138,23 +182,76 @@ exports.sendOtp = async (req, res) => {
 exports.verifyOtpAndLogin = async (req, res) => {
   try {
     const { email, otp } = req.body;
+
     if (!email || !otp) {
-      return res.status(400).json({ success: false, message: 'Email and OTP are required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Email and OTP are required',
+      });
     }
 
-    const isValid = await verifyEmailOtp(email, otp);
-    if (!isValid) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
-    }
+    const normalizedEmail = String(email).trim().toLowerCase();
 
-    const fsmUser = await FsmUser.findOne({ email: String(email).trim().toLowerCase() });
+    const fsmUser = await FsmUser.findOne({
+      email: normalizedEmail,
+    });
+
     if (!fsmUser) {
-      return res.status(404).json({ success: false, message: 'FSM user not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'FSM user not found',
+      });
     }
 
+    // Documents check
+    if (!fsmUser.documentsSubmitted) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please upload your documents first.',
+      });
+    }
+
+    // Pending check
+    if (fsmUser.status === 'pending') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is pending admin approval.',
+      });
+    }
+
+    // Rejected check
+    if (fsmUser.status === 'rejected') {
+      return res.status(403).json({
+        success: false,
+        message:
+          fsmUser.rejectionReason
+            ? `Your account has been rejected. Reason: ${fsmUser.rejectionReason}`
+            : 'Your account has been rejected.',
+      });
+    }
+
+    // Final approval check
+    if (fsmUser.status !== 'approved') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is not approved.',
+      });
+    }
+
+    // Verify OTP
+    const isValid = await verifyEmailOtp(normalizedEmail, otp);
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP',
+      });
+    }
+
+    // Generate JWT
     const token = fsmUser.getSignedJwtToken();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Logged in successfully',
       token,
@@ -169,9 +266,12 @@ exports.verifyOtpAndLogin = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-};
+};;
 
 // @desc    Get logged-in FSM's own profile
 // @route   GET /api/fsm/me
