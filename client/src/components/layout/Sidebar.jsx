@@ -162,9 +162,20 @@ const getNavItems = (role) => {
     },
 
     {
-      to: '/fsm-requests',
-      label: 'FSM Requests',
+      label: 'FSM',
       icon: FiUserCheck,
+      children: [
+        {
+          to: '/fsm-requests',
+          label: 'Technician Requests',
+          icon: FiUserCheck,
+        },
+        {
+          to: '/fsm-jobs',
+          label: 'Job Requests',
+          icon: FiBriefcase,
+        },
+      ],
     },
 
     {

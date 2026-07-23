@@ -133,6 +133,7 @@ app.use('/api/quotations', require('./routes/quotationRoutes'));
 app.use('/api/website-sync', require('./routes/websiteSyncRoutes'));
 app.use("/api/sales-settings",require("./routes/salesSettingRoutes"));
 app.use('/api/fsm', require('./routes/fsmRoutes'));
+app.use('/api/fsm/jobs', require('./routes/fsmJobRoutes'));
 app.use('/api/fsm-admin', require('./routes/fsmAdminRoutes'));
 
 
