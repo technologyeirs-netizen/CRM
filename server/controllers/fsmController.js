@@ -114,64 +114,102 @@ exports.uploadDocuments = async (req, res) => {
 // @access  Public
 exports.sendOtp = async (req, res) => {
   try {
+    console.log("========== SEND OTP START ==========");
+
     const { email } = req.body;
 
     if (!email) {
+      console.log("❌ Email missing");
       return res.status(400).json({
         success: false,
-        message: 'Email is required',
+        message: "Email is required",
       });
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
 
-    const fsmUser = await FsmUser.findOne({ email: normalizedEmail });
+    console.log("📧 Email:", normalizedEmail);
+
+    const fsmUser = await FsmUser.findOne({
+      email: normalizedEmail,
+    });
 
     if (!fsmUser) {
+      console.log("❌ FSM User not found");
+
       return res.status(404).json({
         success: false,
-        message: 'No FSM account found with this email. Please sign up first.',
+        message: "No FSM account found with this email. Please sign up first.",
       });
     }
 
-    // Documents upload nahi hue
+    console.log("✅ FSM User Found");
+    console.log({
+      id: fsmUser._id,
+      status: fsmUser.status,
+      documentsSubmitted: fsmUser.documentsSubmitted,
+      isActive: fsmUser.isActive,
+    });
+
+    // Documents check
     if (!fsmUser.documentsSubmitted) {
+      console.log("❌ Documents not uploaded");
+
       return res.status(403).json({
         success: false,
-        message: 'Please complete document upload first.',
+        message: "Please complete document upload first.",
       });
     }
 
     // Pending
-    if (fsmUser.status === 'pending') {
+    if (fsmUser.status === "pending") {
+      console.log("❌ User Pending");
+
       return res.status(403).json({
         success: false,
-        message: 'Your account is pending admin approval.',
+        message: "Your account is pending admin approval.",
       });
     }
 
     // Rejected
-    if (fsmUser.status === 'rejected') {
+    if (fsmUser.status === "rejected") {
+      console.log("❌ User Rejected");
+
       return res.status(403).json({
         success: false,
-        message:
-          fsmUser.rejectionReason
-            ? `Your account has been rejected. Reason: ${fsmUser.rejectionReason}`
-            : 'Your account has been rejected.',
+        message: fsmUser.rejectionReason
+          ? `Your account has been rejected. Reason: ${fsmUser.rejectionReason}`
+          : "Your account has been rejected.",
       });
     }
 
-    // Approved user only
-    await generateAndSendOtpToEmail(normalizedEmail);
+    console.log("📨 Sending OTP Email...");
+
+    const otp = await generateAndSendOtpToEmail(normalizedEmail);
+
+    console.log("✅ OTP Generated:", otp);
+
+    console.log("========== SEND OTP SUCCESS ==========");
 
     return res.status(200).json({
       success: true,
-      message: 'OTP sent to your email.',
+      message: "OTP sent to your email.",
     });
   } catch (error) {
+    console.error("========== SEND OTP ERROR ==========");
+    console.error("Name:", error.name);
+    console.error("Message:", error.message);
+    console.error("Code:", error.code);
+    console.error("Command:", error.command);
+    console.error("Response:", error.response);
+    console.error("Response Code:", error.responseCode);
+    console.error(error.stack);
+
     return res.status(500).json({
       success: false,
       message: error.message,
+      code: error.code || null,
+      response: error.response || null,
     });
   }
 };
