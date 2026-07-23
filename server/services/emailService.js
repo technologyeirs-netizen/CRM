@@ -1,65 +1,44 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: process.env.SMTP_SECURE === "true",
-
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-
-  logger: true,
-  debug: true,
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, text, html }) => {
   try {
-    console.log("========== SMTP CONFIG ==========");
-    console.log({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE,
-      user: process.env.SMTP_USER,
-      from: process.env.SMTP_FROM,
-    });
+    console.log("========== RESEND EMAIL ==========");
 
-    console.log("Verifying SMTP...");
-
-    await transporter.verify();
-
-    console.log("✅ SMTP Verified");
-
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to,
+    const response = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to: Array.isArray(to) ? to : [to],
       subject,
       text,
-      html,
+      html:
+        html ||
+        `
+        <div style="font-family:Arial,sans-serif;padding:20px">
+          <h2 style="color:#0d6efd;">EIRS Technology</h2>
+          <p>${text}</p>
+
+          <hr/>
+
+          <p style="font-size:12px;color:#666;">
+            This is an automated email from EIRS Technology.
+            Please do not reply to this email.
+          </p>
+        </div>
+        `,
     });
 
-    console.log("✅ Email Sent");
-    console.log(info);
+    console.log("✅ Email Sent Successfully");
+    console.log(response);
 
-    return info;
-  } catch (err) {
-    console.error("========== SMTP ERROR ==========");
-    console.error("Code:", err.code);
-    console.error("Command:", err.command);
-    console.error("Response:", err.response);
-    console.error("Response Code:", err.responseCode);
-    console.error("Message:", err.message);
-    console.error(err);
+    return response;
+  } catch (error) {
+    console.error("========== RESEND ERROR ==========");
+    console.error(error);
 
     throw new Error(
-      err.response ||
-      err.message ||
-      "SMTP Connection Failed"
+      error.message ||
+      "Unable to send email using Resend."
     );
   }
 };
