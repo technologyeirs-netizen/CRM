@@ -135,6 +135,15 @@ app.use("/api/sales-settings",require("./routes/salesSettingRoutes"));
 app.use('/api/fsm', require('./routes/fsmRoutes'));
 app.use('/api/fsm-admin', require('./routes/fsmAdminRoutes'));
 
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "EIRS CRM Backend Running 🚀",
+    health: "/api/health"
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'EIRS CRM API is running', timestamp: new Date() });
