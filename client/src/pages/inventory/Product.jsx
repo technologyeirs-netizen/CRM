@@ -14,7 +14,7 @@ import {
 import toast from "react-hot-toast";
 import Spinner from "../../components/common/Spinner";
 import Modal from "../../components/common/Modal";
-import { itemService } from "../../services/itemService";
+import { productService } from "../../services/productService";
 import { categoryService } from "../../services/categoryService";
 import { subCategoryService } from "../../services/subCategoryService";
 
@@ -22,6 +22,9 @@ const initialForm = {
   productName: "",
   hsn: "",
   category: "",
+  // subCategory holds the SubCategory _id, just for driving this dropdown.
+  // The actual value sent to the server is the subcategory NAME (string),
+  // since that's the field shape the shared "products" collection uses.
   subCategory: "",
   brand: "",
   description: "",
@@ -50,16 +53,12 @@ export default function Product() {
 
     try {
       const [p, c, s] = await Promise.all([
-        itemService.getAll({ page: 1, limit: 500 }),
+        productService.getAll({ page: 1, limit: 500 }),
         categoryService.getAll({ page: 1, limit: 500 }),
         subCategoryService.getAll({ page: 1, limit: 500 }),
       ]);
-      console.log("ITEM RESPONSE =>", p.data);
-      console.log("PRODUCTS =>", p.data.products);
-      console.log("ITEMS =>", p.data.items);
-      console.log("DATA =>", p.data.data);
 
-      setProducts(p.data.products || p.data.items || []);
+      setProducts(p.data.products || []);
 
       setCategories(c.data.categories || []);
 
@@ -96,34 +95,33 @@ export default function Product() {
     setForm(initialForm);
     setShowModal(true);
   };
-  const goLive = async (id) => {
-    try {
-      await itemService.goLive(id);
-      toast.success("Product Live Successfully");
-      load();
-    } catch (err) {
-      toast.error(
-        err?.response?.data?.message || "Failed to make product live",
-      );
-    }
-  };
-
   const openEdit = (item) => {
-    console.log("EDIT ITEM =>", item);
+    const categoryId =
+      typeof item.category === "object" ? item.category?._id : item.category;
+
+    // item.subcategory is stored as a NAME string on the shared product
+    // record — find the matching SubCategory doc (within this category) so
+    // the dropdown can preselect it by id.
+    const matchedSubCategory = subCategories.find(
+      (sub) =>
+        (sub.category?._id || sub.category) === categoryId &&
+        sub.name === item.subcategory,
+    );
+
     setEditingId(item._id);
 
     setForm({
-      productName: item.name || "",
-      hsn: item.hsnCode || "",
-      category: item.category?._id || "",
-      subCategory: item.subCategory?._id || "",
+      productName: item.productName || "",
+      hsn: item.hsn || "",
+      category: categoryId || "",
+      subCategory: matchedSubCategory?._id || "",
       brand: item.brand || "",
       description: item.description || "",
       modelNo: item.modelNo || "",
       images: item.images || [],
-      price: item.salesPrice || 0,
-      stock: item.openingStock || 0,
-      discount: item.discountOnSalesPrice || 0,
+      price: item.price || 0,
+      stock: item.stock || 0,
+      discount: item.discount || 0,
       isFeatured: item.isFeatured || false,
     });
 
@@ -171,27 +169,61 @@ export default function Product() {
       return toast.error("Product name required");
     }
 
+    if (!form.category) {
+      return toast.error("Category is required");
+    }
+
+    if (!form.description.trim()) {
+      return toast.error("Description is required");
+    }
+
+    const selectedSubCategory = filteredSubCategories.find(
+      (sub) => sub._id === form.subCategory,
+    );
+
+    const payload = {
+      productName: form.productName,
+      hsn: form.hsn,
+      category: form.category,
+      subcategory: selectedSubCategory?.name || "",
+      brand: form.brand,
+      description: form.description,
+      modelNo: form.modelNo,
+      images: form.images,
+      price: form.price,
+      stock: form.stock,
+      discount: form.discount,
+      isFeatured: form.isFeatured,
+    };
+
     try {
       if (editingId) {
-        await itemService.update(editingId, form);
+        await productService.update(editingId, payload);
         toast.success("Product updated");
       } else {
-        await itemService.create(form);
+        await productService.create(payload);
         toast.success("Product created");
       }
 
       setShowModal(false);
       load();
-    } catch {
-      toast.error("Save failed");
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Save failed",
+      );
     }
   };
 
   const del = async (id) => {
     if (!confirm("Delete product?")) return;
-    await itemService.delete(id);
-    toast.success("Deleted");
-    load();
+
+    try {
+      await productService.delete(id);
+      toast.success("Deleted");
+      load();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Delete failed");
+    }
   };
 
   if (loading) return <Spinner text="Loading products dashboard..." />;
@@ -207,7 +239,7 @@ export default function Product() {
         <div>
           <h2 style={styles.headerTitle}>Products Directory</h2>
           <p style={styles.headerSubtitle}>
-            Manage your catalog items, pricing, and active inventory
+            Add, edit, and delete products — synced live with the website
           </p>
         </div>
         <button
@@ -268,10 +300,12 @@ export default function Product() {
                           )}
                         </div>
                         <div>
-                          <span style={styles.productNameText}>{p.name}</span>
+                          <span style={styles.productNameText}>
+                            {p.productName}
+                          </span>
 
-                          {p.hsnCode && (
-                            <div style={styles.subBadge}>HSN: {p.hsnCode}</div>
+                          {p.hsn && (
+                            <div style={styles.subBadge}>HSN: {p.hsn}</div>
                           )}
                         </div>
                       </div>
@@ -295,12 +329,12 @@ export default function Product() {
                     </td>
                     <td style={styles.td}>
                       <span style={styles.priceText}>
-                        ₹{Number(p.salesPrice || 0).toLocaleString("en-IN")}
+                        ₹{Number(p.price || 0).toLocaleString("en-IN")}
                       </span>
 
-                      {p.discountOnSalesPrice > 0 && (
+                      {p.discount > 0 && (
                         <span style={styles.discountIndicator}>
-                          -{p.discountOnSalesPrice}%
+                          -{p.discount}%
                         </span>
                       )}
                     </td>
@@ -312,51 +346,20 @@ export default function Product() {
                           gap: 6,
                         }}
                       >
-                        <span style={styles.stockStatusDot(p.openingStock)} />
+                        <span style={styles.stockStatusDot(p.stock)} />
 
                         <span
                           style={{
                             fontWeight: 600,
-                            color: p.openingStock > 0 ? "#1e293b" : "#ef4444",
+                            color: p.stock > 0 ? "#1e293b" : "#ef4444",
                           }}
                         >
-                          Qty: {p.openingStock || 0}
+                          Qty: {p.stock || 0}
                         </span>
                       </div>
                     </td>
                     <td style={{ ...styles.td, textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: 6 }}>
-                        {!p.isLive && (
-                          <button
-                            onClick={() => goLive(p._id)}
-                            style={{
-                              background: "#22c55e",
-                              color: "#fff",
-                              border: "none",
-                              padding: "8px 12px",
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              fontWeight: 600,
-                            }}
-                          >
-                            Go Live
-                          </button>
-                        )}
-
-                        {p.isLive && (
-                          <span
-                            style={{
-                              background: "#dcfce7",
-                              color: "#15803d",
-                              padding: "8px 12px",
-                              borderRadius: "8px",
-                              fontWeight: 600,
-                            }}
-                          >
-                            Live
-                          </span>
-                        )}
-
                         <button
                           onClick={() => openEdit(p)}
                           className="action-btn action-btn-edit"
