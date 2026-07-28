@@ -10,7 +10,6 @@ const initialForm = {
   name: '',
   email: '',
   password: '',
-  confirmPassword: '',
   phone: '',
   role: '',
   department: '',
@@ -64,8 +63,7 @@ const EmployeesPage = () => {
     setFormData({
       name: item.name || '',
       email: item.email || '',
-      password: '',
-      confirmPassword: '',
+      password: item.password || '',
       phone: item.phone || '',
       role: item.role || '',
       department: item.department || '',
@@ -79,22 +77,12 @@ const EmployeesPage = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!editData && !formData.password) {
-        toast.error('Password is required for a new employee login');
-        return;
-      }
-
-      if (formData.password && formData.password !== formData.confirmPassword) {
-        toast.error('Passwords do not match');
+      if (!formData.password) {
+        toast.error('Password is required for employee login');
         return;
       }
 
       const payload = { ...formData };
-      delete payload.confirmPassword;
-
-      if (editData && !payload.password) {
-        delete payload.password;
-      }
 
       if (editData?._id) {
         await employeeService.update(editData._id, payload);
@@ -199,6 +187,7 @@ const EmployeesPage = () => {
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Password</th>
                     <th>Phone</th>
                     <th>Role</th>
                     <th>Region</th>
@@ -211,6 +200,7 @@ const EmployeesPage = () => {
                     <tr key={employee._id}>
                       <td style={{ fontWeight: 600 }}>{employee.name}</td>
                       <td>{employee.email}</td>
+                      <td>{employee.password || '—'}</td>
                       <td>{employee.phone || '—'}</td>
                       <td>{employee.role}</td>
                       <td>{employee.region || '—'}</td>
@@ -229,7 +219,7 @@ const EmployeesPage = () => {
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={7}><div className="empty-state"><h3>No employees found</h3></div></td></tr>
+                    <tr><td colSpan={8}><div className="empty-state"><h3>No employees found</h3></div></td></tr>
                   )}
                 </tbody>
               </table>
@@ -273,21 +263,12 @@ const EmployeesPage = () => {
             <div className="form-group">
               <label className="form-label">Password</label>
               <input
-                type="password"
+                type="text"
                 className="form-control"
-                placeholder={editData ? 'Leave blank to keep current password' : 'Create employee login password'}
+                placeholder="Employee login password"
+                autoComplete="off"
                 value={formData.password}
                 onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Confirm Password</label>
-              <input
-                type="password"
-                className="form-control"
-                placeholder={editData ? 'Confirm new password only if changing it' : 'Re-enter password'}
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData((p) => ({ ...p, confirmPassword: e.target.value }))}
               />
             </div>
           </div>
