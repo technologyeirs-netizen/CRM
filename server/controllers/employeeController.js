@@ -1,5 +1,17 @@
 const Employee = require('../models/Employee');
 const User = require('../models/User');
+const { decryptPassword } = require('../utils/passwordCrypto');
+
+// Converts an Employee doc into a plain object and swaps the hidden hashed
+// password for the decrypted, human-readable password so the frontend can
+// show it (and let admins edit it directly) in the Add/Edit Employee form.
+const withVisiblePassword = (employeeDoc) => {
+  if (!employeeDoc) return employeeDoc;
+  const employee = employeeDoc.toObject ? employeeDoc.toObject() : { ...employeeDoc };
+  employee.password = decryptPassword(employeeDoc.passwordEncrypted);
+  delete employee.passwordEncrypted;
+  return employee;
+};
 
 // @desc    Get all employees
 // @route   GET /api/employees
@@ -22,7 +34,7 @@ exports.getEmployees = async (req, res) => {
 
     const total = await Employee.countDocuments(query);
     const employees = await Employee.find(query)
-      .select('-password')
+      .select('+passwordEncrypted')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -33,7 +45,7 @@ exports.getEmployees = async (req, res) => {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: Number(page),
-      employees,
+      employees: employees.map(withVisiblePassword),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -45,13 +57,13 @@ exports.getEmployees = async (req, res) => {
 // @access  Private
 exports.getMyEmployeeProfile = async (req, res) => {
   try {
-    const employee = await Employee.findOne({ email: req.user.email, isDeleted: false }).select('-password');
+    const employee = await Employee.findOne({ email: req.user.email, isDeleted: false }).select('+passwordEncrypted');
 
     if (!employee) {
       return res.status(404).json({ success: false, message: 'Employee profile not found' });
     }
 
-    res.status(200).json({ success: true, employee });
+    res.status(200).json({ success: true, employee: withVisiblePassword(employee) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -160,7 +172,9 @@ exports.createEmployee = async (req, res) => {
       throw userError;
     }
 
-    res.status(201).json({ success: true, message: 'Employee created successfully', employee });
+    const employeeWithPassword = await Employee.findById(employee._id).select('+passwordEncrypted');
+
+    res.status(201).json({ success: true, message: 'Employee created successfully', employee: withVisiblePassword(employeeWithPassword) });
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ success: false, message: 'Employee with this email already exists' });
@@ -224,7 +238,9 @@ exports.updateEmployee = async (req, res) => {
       });
     }
 
-    res.status(200).json({ success: true, message: 'Employee updated successfully', employee });
+    const employeeWithPassword = await Employee.findById(employee._id).select('+passwordEncrypted');
+
+    res.status(200).json({ success: true, message: 'Employee updated successfully', employee: withVisiblePassword(employeeWithPassword) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { encryptPassword } = require('../utils/passwordCrypto');
 
 const EmployeeSchema = new mongoose.Schema(
   {
@@ -15,6 +16,14 @@ const EmployeeSchema = new mongoose.Schema(
       type: String,
       required: false,
       minlength: 6,
+      select: false,
+    },
+    // Reversible, encrypted copy of the password kept ONLY so it can be shown
+    // back in the Edit Employee form. Login/auth always uses the bcrypt hash
+    // stored above in `password`, never this field.
+    passwordEncrypted: {
+      type: String,
+      required: false,
       select: false,
     },
     phone: { type: String },
@@ -37,6 +46,9 @@ EmployeeSchema.index({ name: 'text', email: 'text', role: 'text', region: 'text'
 
 EmployeeSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) return next();
+  // Keep a reversible, encrypted copy of the plaintext password BEFORE it
+  // gets hashed, so the Edit Employee form can show/edit the real password.
+  this.passwordEncrypted = encryptPassword(this.password);
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
