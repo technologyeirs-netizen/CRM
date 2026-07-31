@@ -163,9 +163,10 @@ const FsmJobsPage = () => {
   };
 
   const handleCancel = async (job) => {
-    if (!window.confirm(`Cancel FSM job for "${job.customerName}"?`)) return;
+    const reason = window.prompt(`Cancel FSM job for "${job.customerName}" - enter a reason:`, '');
+    if (reason === null) return; // admin dismissed the prompt
     try {
-      await fsmAdminService.cancelJob(job._id, 'Cancelled by admin');
+      await fsmAdminService.cancelJob(job._id, reason.trim() || 'Cancelled by admin');
       toast.success('Job cancelled');
       loadData();
     } catch (err) {
@@ -413,14 +414,19 @@ const FsmJobsPage = () => {
               <select className="form-control" value={selectedTechId} onChange={(e) => setSelectedTechId(e.target.value)}>
                 <option value="">-- Choose a technician --</option>
                 {technicians.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    {t.fullName} ({t.phone}) {t.isActive ? '· Online' : '· Offline'}
+                  <option key={t._id} value={t._id} disabled={t.isOnLeave}>
+                    {t.fullName} ({t.phone}) {t.isOnLeave ? '· On Leave' : t.isActive ? '· Online' : '· Offline'}
                   </option>
                 ))}
               </select>
               {!technicians.length && (
                 <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>
                   No approved service men available. Approve technicians from FSM Requests first.
+                </p>
+              )}
+              {selectedTechId && technicians.find((t) => t._id === selectedTechId)?.isOnLeave && (
+                <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>
+                  This service man is currently on leave and cannot be assigned.
                 </p>
               )}
             </div>
@@ -458,11 +464,16 @@ const FsmJobsPage = () => {
               <select className="form-control" value={selectedTechId} onChange={(e) => setSelectedTechId(e.target.value)}>
                 <option value="">-- Choose a technician --</option>
                 {technicians.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    {t.fullName} ({t.phone}) {t.isActive ? '· Online' : '· Offline'}
+                  <option key={t._id} value={t._id} disabled={t.isOnLeave}>
+                    {t.fullName} ({t.phone}) {t.isOnLeave ? '· On Leave' : t.isActive ? '· Online' : '· Offline'}
                   </option>
                 ))}
               </select>
+              {selectedTechId && technicians.find((t) => t._id === selectedTechId)?.isOnLeave && (
+                <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>
+                  This service man is currently on leave and cannot be assigned.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -550,8 +561,13 @@ const FsmJobsPage = () => {
 
             {viewJob.status === 'cancelled' && viewJob.cancelReason && (
               <div className="form-group">
-                <label className="form-label">Cancellation Reason</label>
+                <label className="form-label">
+                  Cancelled By {viewJob.cancelledBy === 'fsm' ? '(Service Man)' : viewJob.cancelledBy === 'admin' ? '(Admin)' : ''}
+                </label>
                 <p style={{ color: 'var(--danger)' }}>{viewJob.cancelReason}</p>
+                {viewJob.cancelledAt && (
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtDate(viewJob.cancelledAt)}</p>
+                )}
               </div>
             )}
           </div>

@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const FsmUser = require('../models/FsmUser');
 const FsmJob = require('../models/FsmJob');
+const FsmLeave = require('../models/FsmLeave');
 const cloudinary = require('../config/cloudinary');
+const { getActiveLeaveForFsm, getOnLeaveMapForFsmIds } = require('../utils/fsmLeaveHelper');
 
 // Website ke leads raw "servicebookings" collection me padi hoti hain
 // (websiteSyncController isi collection ko WebsiteSourceBooking naam se use karta hai).
@@ -114,7 +116,20 @@ exports.getFsmTechnicians = async (req, res) => {
       .select('fullName phone email isActive')
       .sort({ fullName: 1 });
 
-    res.status(200).json({ success: true, count: technicians.length, data: technicians });
+    const leaveMap = await getOnLeaveMapForFsmIds(technicians.map((t) => t._id));
+
+    const data = technicians.map((t) => {
+      const leave = leaveMap.get(String(t._id));
+      return {
+        ...t.toObject(),
+        isOnLeave: Boolean(leave),
+        currentLeave: leave
+          ? { _id: leave._id, fromDate: leave.fromDate, toDate: leave.toDate, reason: leave.reason }
+          : null,
+      };
+    });
+
+    res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -166,6 +181,14 @@ exports.assignJob = async (req, res) => {
     const fsmUser = await FsmUser.findById(fsmUserId);
     if (!fsmUser || fsmUser.status !== 'approved') {
       return res.status(400).json({ success: false, message: 'Select a valid, approved service man' });
+    }
+
+    const activeLeave = await getActiveLeaveForFsm(fsmUser._id);
+    if (activeLeave) {
+      return res.status(400).json({
+        success: false,
+        message: `${fsmUser.fullName} is on leave (${activeLeave.fromDate.toDateString()} - ${activeLeave.toDate.toDateString()}). Choose another service man.`,
+      });
     }
 
     const existingJob = await FsmJob.findOne({ bookingId: String(bookingId), status: { $ne: 'cancelled' } });
@@ -269,6 +292,14 @@ exports.reassignFsmJob = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Select a valid, approved service man' });
     }
 
+    const activeLeave = await getActiveLeaveForFsm(fsmUser._id);
+    if (activeLeave) {
+      return res.status(400).json({
+        success: false,
+        message: `${fsmUser.fullName} is on leave (${activeLeave.fromDate.toDateString()} - ${activeLeave.toDate.toDateString()}). Choose another service man.`,
+      });
+    }
+
     job.assignedTo = fsmUser._id;
     job.assignedBy = req.user._id;
     job.status = 'pending';
@@ -296,9 +327,44 @@ exports.cancelFsmJob = async (req, res) => {
 
     job.status = 'cancelled';
     job.cancelReason = req.body.reason || 'Cancelled by admin';
+    job.cancelledBy = 'admin';
+    job.cancelledAt = new Date();
     await job.save();
 
     res.status(200).json({ success: true, message: 'FSM job cancelled', data: job });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ==========================================================
+// FSM LEAVE REQUESTS
+// ==========================================================
+
+// @desc    Get all leave requests (optionally filter by fsmUserId / status)
+// @route   GET /api/fsm-admin/leaves?fsmUserId=...&status=active
+// @access  Private/Admin
+exports.getAllFsmLeaves = async (req, res) => {
+  try {
+    const { fsmUserId, status } = req.query;
+    const filter = {};
+    if (fsmUserId) filter.fsmUser = fsmUserId;
+    if (status) filter.status = status;
+
+    const leaves = await FsmLeave.find(filter)
+      .populate('fsmUser', 'fullName phone email isActive')
+      .sort({ fromDate: -1 });
+
+    const today = new Date();
+    const data = leaves.map((leave) => {
+      const obj = leave.toObject();
+      const isCurrentlyOnLeave =
+        leave.status === 'active' && leave.fromDate <= today && leave.toDate >= today;
+      obj.isCurrentlyOnLeave = isCurrentlyOnLeave;
+      return obj;
+    });
+
+    res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

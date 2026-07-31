@@ -56,6 +56,13 @@ const FsmJobSchema = new mongoose.Schema(
     completeOtpVerified: { type: Boolean, default: false },
 
     cancelReason: { type: String, default: null },
+    // Kisne cancel kiya - admin ne ya khud service man ne (app se)
+    cancelledBy: {
+      type: String,
+      enum: ['admin', 'fsm', null],
+      default: null,
+    },
+    cancelledAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
