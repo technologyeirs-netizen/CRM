@@ -240,3 +240,44 @@ exports.verifyCompleteOtp = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Service man cancels a job assigned to them (reason required).
+//          Frees up the lead so admin can assign it to another service man.
+// @route   PUT /api/fsm/jobs/:id/cancel
+// @access  Private (FSM)
+exports.cancelMyJob = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    if (!reason || !String(reason).trim()) {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
+    }
+
+    const job = await findMyJob(req);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    // Kaam shuru ho chuka ho ya complete ho chuka ho to service man cancel nahi kar sakta -
+    // us case me admin se contact karna padega.
+    if (['in_progress', 'completed', 'cancelled'].includes(job.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Job cannot be cancelled once it is ${job.status}`,
+      });
+    }
+
+    job.status = 'cancelled';
+    job.cancelReason = String(reason).trim();
+    job.cancelledBy = 'fsm';
+    job.cancelledAt = new Date();
+    await job.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Job cancelled. Admin will reassign this lead to another service man.',
+      data: job,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

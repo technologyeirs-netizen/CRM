@@ -12,6 +12,7 @@ const {
   getFsmJobById,
   reassignFsmJob,
   cancelFsmJob,
+  getAllFsmLeaves,
 } = require('../controllers/fsmAdminController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -28,5 +29,8 @@ router.get('/jobs', protect, authorize('admin'), getAllFsmJobs);
 router.get('/jobs/:id', protect, authorize('admin'), getFsmJobById);
 router.put('/jobs/:id/reassign', protect, authorize('admin'), reassignFsmJob);
 router.put('/jobs/:id/cancel', protect, authorize('admin'), cancelFsmJob);
+
+// ----- FSM leave requests -----
+router.get('/leaves', protect, authorize('admin'), getAllFsmLeaves);
 
 module.exports = router;

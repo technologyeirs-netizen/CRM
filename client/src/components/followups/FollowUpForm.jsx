@@ -10,15 +10,17 @@ const LABELS = [
   'Market Follow-up', 'Urgent', 'New Lead', 'Proposal Sent',
   'Negotiation', 'Contract Review', 'Onboarding', 'General',
 ];
+const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
 
-const PRIORITY_OPTIONS = ['low', 'moderate', 'instant'];
 
 const normalizePriority = (value) => {
   const normalized = String(value || '').toLowerCase();
-  if (normalized === 'medium') return 'moderate';
-  if (normalized === 'high' || normalized === 'critical') return 'instant';
-  if (normalized === 'low' || normalized === 'moderate' || normalized === 'instant') return normalized;
-  return 'moderate';
+
+  if (['low', 'medium', 'high', 'critical'].includes(normalized)) {
+    return normalized;
+  }
+
+  return 'medium';
 };
 
 const getLabelClass = (label) => {
@@ -34,7 +36,7 @@ const getLabelClass = (label) => {
 
 const defaultForm = {
   client: '', title: '', description: '', label: 'General',
-  priority: 'moderate', scheduledDate: '', scheduledTime: '',
+  priority: 'medium', scheduledDate: '', scheduledTime: '',
   channel: 'phone', assignedTo: '',
 };
 

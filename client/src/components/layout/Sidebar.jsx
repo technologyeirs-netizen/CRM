@@ -175,6 +175,11 @@ const getNavItems = (role) => {
           label: 'Job Requests',
           icon: FiBriefcase,
         },
+        {
+          to: '/fsm-leaves',
+          label: 'Leave Requests',
+          icon: FiCalendar,
+        },
       ],
     },
 

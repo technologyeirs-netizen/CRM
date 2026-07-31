@@ -48,6 +48,7 @@ const PurchaseHistoryPage = lazy(() => import("./pages/PurchaseHistoryPage"));
 const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
 const FsmRequestsPage = lazy(() => import("./pages/FsmRequestsPage"));
 const FsmJobsPage = lazy(() => import("./pages/FsmJobsPage"));
+const FsmLeavesPage = lazy(() => import("./pages/FsmLeavesPage"));
 const EmployeeDashboardPage = lazy(
   () => import("./pages/EmployeeDashboardPage"),
 );
@@ -219,6 +220,7 @@ function App() {
                 <Route path="employees" element={<EmployeesPage />} />
                 <Route path="fsm-requests" element={<FsmRequestsPage />} />
                 <Route path="fsm-jobs" element={<FsmJobsPage />} />
+                <Route path="fsm-leaves" element={<FsmLeavesPage />} />
                 <Route path="distribution" element={<DistributionPage />} />
                 <Route path="campaigns" element={<CampaignsPage />} />
                 {websiteSyncModulesEnabled && (

@@ -14,4 +14,7 @@ export const fsmAdminService = {
   getJobById: (id) => API.get(`/fsm-admin/jobs/${id}`),
   reassignJob: (id, fsmUserId) => API.put(`/fsm-admin/jobs/${id}/reassign`, { fsmUserId }),
   cancelJob: (id, reason) => API.put(`/fsm-admin/jobs/${id}/cancel`, { reason }),
+
+  // ----- FSM leave requests -----
+  getLeaves: (params) => API.get('/fsm-admin/leaves', { params }),
 };

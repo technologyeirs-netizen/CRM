@@ -12,20 +12,22 @@ const initialForm = {
   prospect: '',
   assignedTo: '',
   status: 'assigned',
-  priority: 'moderate',
+  priority: 'medium',
   startingDate: '',
   dueDate: '',
   notes: '',
 };
 
-const PRIORITY_OPTIONS = ['low', 'moderate', 'instant'];
+const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
 
 const normalizePriority = (value) => {
   const normalized = String(value || '').toLowerCase();
-  if (normalized === 'medium') return 'moderate';
-  if (normalized === 'high' || normalized === 'critical') return 'instant';
-  if (normalized === 'low' || normalized === 'moderate' || normalized === 'instant') return normalized;
-  return 'moderate';
+
+  if (['low', 'medium', 'high', 'critical'].includes(normalized)) {
+    return normalized;
+  }
+
+  return 'medium';
 };
 
 const DistributionPage = () => {
@@ -257,7 +259,19 @@ const DistributionPage = () => {
                       </td>
                       <td>{item.assignedBy?.name || '—'}</td>
                       <td><span className={`badge ${item.status === 'converted' || item.status === 'closed' ? 'badge-success' : item.status === 'contacted' ? 'badge-info' : item.status === 'in_progress' ? 'badge-warning' : 'badge-primary'}`}>{item.status.replace('_', ' ')}</span></td>
-                      <td><span className={`badge ${normalizePriority(item.priority) === 'instant' ? 'badge-danger' : normalizePriority(item.priority) === 'moderate' ? 'badge-warning' : 'badge-secondary'}`}>{normalizePriority(item.priority)}</span></td>
+                      <td><span
+  className={`badge ${
+    item.priority === 'critical'
+      ? 'badge-danger'
+      : item.priority === 'high'
+      ? 'badge-warning'
+      : item.priority === 'medium'
+      ? 'badge-info'
+      : 'badge-secondary'
+  }`}
+>
+  {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
+</span></td>
                       <td>{item.assignedAt ? new Date(item.assignedAt).toLocaleDateString() : '—'}</td>
                       <td>
                         <div style={{ display: 'flex', gap: 4 }}>

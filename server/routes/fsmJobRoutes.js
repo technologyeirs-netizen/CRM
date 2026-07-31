@@ -10,6 +10,7 @@ const {
   uploadAfterPhoto,
   requestCompleteOtp,
   verifyCompleteOtp,
+  cancelMyJob,
 } = require('../controllers/fsmJobController');
 const { protectFsm } = require('../middleware/fsmAuth');
 const { uploadBeforePhoto: beforePhotoUpload, uploadAfterPhoto: afterPhotoUpload } = require('../middleware/fsmJobUpload');
@@ -19,6 +20,7 @@ router.get('/', protectFsm, getMyJobs);
 router.get('/:id', protectFsm, getMyJobById);
 
 router.put('/:id/accept', protectFsm, acceptJob);
+router.put('/:id/cancel', protectFsm, cancelMyJob);
 router.put('/:id/start-service', protectFsm, startService);
 router.post('/:id/verify-start-otp', protectFsm, verifyStartOtp);
 

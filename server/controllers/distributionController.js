@@ -7,10 +7,19 @@ const escapeRegex = (text = '') => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const generateAssignmentId = async () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const count = await Distribution.countDocuments({
-    assignmentId: { $regex: `^ASG-${datePart}-` },
-  });
-  return `ASG-${datePart}-${String(count + 1).padStart(4, '0')}`;
+
+  const lastAssignment = await Distribution.findOne({
+    assignmentId: { $regex: `^ASG-${datePart}-` }
+  }).sort({ assignmentId: -1 });
+
+  let nextNumber = 1;
+
+  if (lastAssignment) {
+    const lastNo = parseInt(lastAssignment.assignmentId.split('-').pop(), 10);
+    nextNumber = lastNo + 1;
+  }
+
+  return `ASG-${datePart}-${String(nextNumber).padStart(4, '0')}`;
 };
 
 const getEmployeeForUser = async (user) => {
@@ -243,11 +252,25 @@ exports.createDistribution = async (req, res) => {
       distribution: populatedDistribution,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({ success: false, message: 'Assignment ID already exists' });
-    }
-    res.status(500).json({ success: false, message: error.message });
+  console.log("FULL ERROR =>", error);
+
+  if (error.code === 11000) {
+    console.log("Duplicate Key:", error.keyPattern);
+    console.log("Duplicate Value:", error.keyValue);
+
+    return res.status(400).json({
+      success: false,
+      message: "Duplicate Key",
+      keyPattern: error.keyPattern,
+      keyValue: error.keyValue,
+    });
   }
+
+  return res.status(500).json({
+    success: false,
+    message: error.message,
+  });
+}
 };
 
 // @desc    Update distribution
