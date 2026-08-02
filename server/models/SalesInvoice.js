@@ -4,7 +4,7 @@ const invoiceItemSchema = new mongoose.Schema(
   {
     itemId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Item",
+      ref: "WebsiteProduct",
     },
 
     name: {

@@ -237,6 +237,7 @@ const DistributionPage = () => {
                   <tr>
                     <th>Assignment ID</th>
                     <th>Service Request</th>
+                    <th>Phone</th>
                     <th>Assigned To</th>
                     <th>Assigned By</th>
                     <th>Status</th>
@@ -253,6 +254,7 @@ const DistributionPage = () => {
                         <div>{item.prospect?.firstName} {item.prospect?.lastName}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.prospect?.email || '—'}</div>
                       </td>
+                      <td>{item.prospect?.phone || '—'}</td>
                       <td>
                         <div>{item.assignedTo?.name || '—'}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.assignedTo?.role || ''}</div>
@@ -289,7 +291,7 @@ const DistributionPage = () => {
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={8}><div className="empty-state"><h3>No assignments found</h3></div></td></tr>
+                    <tr><td colSpan={9}><div className="empty-state"><h3>No assignments found</h3></div></td></tr>
                   )}
                 </tbody>
               </table>
