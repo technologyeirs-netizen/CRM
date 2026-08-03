@@ -1,5 +1,42 @@
 const SalesInvoice = require("../models/SalesInvoice");
 const SalesSetting = require("../models/SalesSetting");
+const WebsiteProduct = require("../models/Products");
+
+// ============================================
+// STOCK HELPER
+// direction = -1  => deduct stock (invoice created/items added)
+// direction =  1  => restore stock (invoice deleted/items removed)
+// ============================================
+const adjustProductStock = async (items = [], direction = -1) => {
+  for (const it of items) {
+    const productId = it.itemId || it._id;
+
+    if (!productId) continue;
+
+    const qty = Math.abs(Number(it.qty || 0));
+
+    if (!qty) continue;
+
+    try {
+      const product = await WebsiteProduct.findById(productId);
+
+      if (!product) continue;
+
+      const currentStock = Number(product.stock || 0);
+
+      let newStock = currentStock + direction * qty;
+
+      if (newStock < 0) newStock = 0;
+
+      product.stock = newStock;
+
+      await product.save();
+    } catch (stockErr) {
+      console.log("STOCK ADJUST ERROR =>", stockErr.message);
+    }
+  }
+};
+
 // ============================================
 // CREATE SALES INVOICE
 // ============================================
@@ -320,6 +357,10 @@ console.log(
   "INVOICE SAVED =>",
   invoice
 );
+
+// Deduct sold quantity from product stock
+await adjustProductStock(formattedItems, -1);
+
 const currentNumber = Number(
   preferences.currentInvoiceNumber || 1
 );
@@ -507,6 +548,18 @@ return res.status(500).json({
 // ============================================
 exports.deleteSalesInvoice = async (req, res) => {
 try {
+const existingInvoice = await SalesInvoice.findById(req.params.id);
+
+if (!existingInvoice) {
+  return res.status(404).json({
+    success: false,
+    message: "Invoice Not Found",
+  });
+}
+
+// Restore product stock for the deleted invoice's items
+await adjustProductStock(existingInvoice.items, 1);
+
 const invoice = await SalesInvoice.findByIdAndDelete(
 req.params.id
 );
@@ -540,6 +593,8 @@ return res.status(500).json({
 exports.updateSalesInvoice = async (req, res) => {
 
   try {
+
+    const oldInvoice = await SalesInvoice.findById(req.params.id);
 
     const {
 
@@ -793,6 +848,13 @@ exports.updateSalesInvoice = async (req, res) => {
         }
 
       );
+
+    // Reconcile stock: give back the old items' quantity, then
+    // deduct the quantity for the newly saved items.
+    if (oldInvoice) {
+      await adjustProductStock(oldInvoice.items, 1);
+    }
+    await adjustProductStock(formattedItems, -1);
 
     return res.json({
 

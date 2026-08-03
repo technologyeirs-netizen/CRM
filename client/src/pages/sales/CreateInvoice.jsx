@@ -9,7 +9,7 @@ import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { clientService } from "../../services/clientService";
-import { itemService } from "../../services/itemService";
+import { productService } from "../../services/productService";
 import { categoryService } from "../../services/categoryService";
 import InvoiceHeader from "../../components/invoice/InvoiceHeader";
 import SalesInvoicePartySection from "../../components/invoice/SalesInvoicePartySection";
@@ -150,13 +150,13 @@ export default function CreateSalesInvoicePage() {
     setItemsLoading(true);
 
     try {
-      const { data } = await itemService.getAll(itemFilters);
+      const { data } = await productService.getAll(itemFilters);
 
-      const itemList = Array.isArray(data?.items) ? data.items : [];
+      const itemList = Array.isArray(data?.products) ? data.products : [];
 
       setItemsApiList(itemList);
     } catch (error) {
-      toast.error("Failed to load items");
+      toast.error("Failed to load products");
       setItemsApiList([]);
     }
 
@@ -564,62 +564,59 @@ useEffect(() => {
 
 
   // ===============================
-// ADD ITEM FROM MODAL
+// ADD PRODUCT FROM MODAL
+// (products now come straight from the Product model, not "Item")
 // ===============================
-const handleAddItemClick = (item) => {
-  if (!item) return;
+const handleAddItemClick = (product, qty = 1) => {
+  if (!product) return;
 
-  // Same item already added?
+  const addQty = Number(qty) > 0 ? Number(qty) : 1;
+  const availableStock = Number(product.stock || 0);
+
+  // Same product already added?
   const existingItem = invoiceItems.find(
-    (i) =>
-      i._id === item._id ||
-      i.itemCode === item.itemCode
+    (i) => i._id === product._id
   );
 
   if (existingItem) {
     setInvoiceItems((prev) =>
-      prev.map((i) =>
-        i._id === item._id
-          ? {
-              ...i,
-              qty: Number(i.qty || 1) + 1,
-            }
-          : i
-      )
+      prev.map((i) => {
+        if (i._id !== product._id) return i;
+
+        let nextQty = Number(i.qty || 1) + addQty;
+
+        if (availableStock > 0 && nextQty > availableStock) {
+          nextQty = availableStock;
+        }
+
+        return { ...i, qty: nextQty };
+      })
     );
   } else {
     setInvoiceItems((prev) => [
       ...prev,
       {
-        _id: item._id,
+        _id: product._id,
 
-        name: item.name || "",
+        name: product.productName || "",
 
-        itemCode: item.itemCode || "",
+        itemCode: product.modelNo || "",
 
-        hsnCode: item.hsnCode || "",
+        hsnCode: product.hsn || "",
 
-        qty: 1,
+        qty: availableStock > 0 ? Math.min(addQty, availableStock) : addQty,
 
-        salesPrice: Number(item.salesPrice || 0),
+        salesPrice: Number(product.price || 0),
 
-        purchasePrice: Number(item.purchasePrice || 0),
+        purchasePrice: Number(product.purchasePrice || 0),
 
-        discountOnSalesPrice: Number(
-          item.discountOnSalesPrice || 0
-        ),
+        discountOnSalesPrice: Number(product.discount || 0),
 
-        tax: Number(
-          item.tax ||
-            item.gstTaxRate ||
-            item.gst ||
-            0
-        ),
+        tax: Number(product.tax || product.gstTaxRate || 0),
 
-        measuringUnit:
-          item.measuringUnit === "#133"
-            ? "PCS"
-            : item.measuringUnit || "PCS",
+        availableStock,
+
+        measuringUnit: "PCS",
       },
     ]);
   }

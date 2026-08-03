@@ -1,6 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { itemService } from "../../services/itemService";
+import { productService } from "../../services/productService";
 
 export default function InvoiceItemModal({
   showItemModal,
@@ -9,44 +9,43 @@ export default function InvoiceItemModal({
   setItemFilters,
   handleAddItemClick,
 }) {
-  const [itemsLoading, setItemsLoading] = useState(false);
-  const [itemsApiList, setItemsApiList] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsApiList, setProductsApiList] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
+
+  // Qty chosen for each product before it is added to the bill
+  const [qtyMap, setQtyMap] = useState({});
 
   useEffect(() => {
     if (!showItemModal) return;
 
-    const loadItems = async () => {
+    const loadProducts = async () => {
       try {
-        setItemsLoading(true);
+        setProductsLoading(true);
 
-        const response = await itemService.getAll({
+        const response = await productService.getAll({
           page: 1,
           limit: 500,
         });
 
-        const items =
-          response?.data?.products ||
-          response?.data?.items ||
-          response?.data?.data ||
-          [];
+        const products = response?.data?.products || [];
 
-        setItemsApiList(items);
+        setProductsApiList(products);
 
         const uniqueCategories = [
           ...new Map(
-            items
-              .filter((item) => item.category)
-              .map((item) => [
-                typeof item.category === "object"
-                  ? item.category._id
-                  : item.category,
-                typeof item.category === "object"
-                  ? item.category
+            products
+              .filter((product) => product.category)
+              .map((product) => [
+                typeof product.category === "object"
+                  ? product.category._id
+                  : product.category,
+                typeof product.category === "object"
+                  ? product.category
                   : {
-                      _id: item.category,
-                      name: item.category,
+                      _id: product.category,
+                      name: product.category,
                     },
               ]),
           ).values(),
@@ -56,29 +55,52 @@ export default function InvoiceItemModal({
       } catch (err) {
         console.log(err);
       } finally {
-        setItemsLoading(false);
+        setProductsLoading(false);
       }
     };
 
-    loadItems();
+    loadProducts();
   }, [showItemModal]);
 
-  const filteredItems = itemsApiList.filter((item) => {
+  const filteredProducts = productsApiList.filter((product) => {
     const search = itemFilters?.search?.toLowerCase() || "";
 
     const matchesSearch =
-      item?.name?.toLowerCase().includes(search) ||
-      item?.brand?.toLowerCase().includes(search) ||
-      item?.hsnCode?.toLowerCase().includes(search) ||
-      item?.itemCode?.toLowerCase().includes(search);
+      product?.productName?.toLowerCase().includes(search) ||
+      product?.brand?.toLowerCase().includes(search) ||
+      product?.hsn?.toLowerCase().includes(search) ||
+      product?.modelNo?.toLowerCase().includes(search);
 
     const matchesCategory =
       !selectedCategory ||
-      item?.category?._id === selectedCategory ||
-      item?.category === selectedCategory;
+      product?.category?._id === selectedCategory ||
+      product?.category === selectedCategory;
 
     return matchesSearch && matchesCategory;
   });
+
+  const getQty = (product) => qtyMap[product._id] || 1;
+
+  const setQty = (product, value) => {
+    const stock = Number(product.stock || 0);
+    let qty = Number(value) || 1;
+
+    if (qty < 1) qty = 1;
+    if (stock > 0 && qty > stock) qty = stock;
+
+    setQtyMap((prev) => ({ ...prev, [product._id]: qty }));
+  };
+
+  const onAdd = (product) => {
+    const stock = Number(product.stock || 0);
+
+    if (stock <= 0) return; // out of stock, do not allow adding
+
+    handleAddItemClick(product, getQty(product));
+
+    // reset qty for next time this modal opens
+    setQtyMap((prev) => ({ ...prev, [product._id]: 1 }));
+  };
 
   if (!showItemModal) return null;
 
@@ -86,7 +108,7 @@ export default function InvoiceItemModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40 p-4">
       <div className="bg-white w-full max-w-5xl rounded-lg shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-white">
-          <h3 className="text-lg font-bold text-gray-800">Add Items to Bill</h3>
+          <h3 className="text-lg font-bold text-gray-800">Add Products to Bill</h3>
           <button
             onClick={() => setShowItemModal(false)}
             className="text-gray-400 hover:text-red-500 transition"
@@ -100,7 +122,7 @@ export default function InvoiceItemModal({
             <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
             <input
               type="text"
-              placeholder="Search by Item/ Serial no./ HSN code/ SKU/ Custom Field / Category"
+              placeholder="Search by Product / Brand / HSN code / Model No / Category"
               value={itemFilters.search}
               onChange={(e) =>
                 setItemFilters({
@@ -134,7 +156,7 @@ export default function InvoiceItemModal({
           </div>
           <div className="md:col-span-2">
             <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded text-sm transition">
-              Create New Item
+              Create New Product
             </button>
           </div>
         </div>
@@ -143,80 +165,111 @@ export default function InvoiceItemModal({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100 border-b border-gray-200 text-gray-500 font-semibold tracking-wider uppercase sticky top-0 z-10">
-                <th className="p-3">Item Name</th>
-                <th className="p-3">Item Code</th>
+                <th className="p-3">Product Name</th>
+                <th className="p-3">HSN / Model</th>
                 <th className="p-3">Stock</th>
                 <th className="p-3">Sales Price</th>
+                <th className="p-3">Qty</th>
                 <th className="p-3 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
-              {itemsLoading ? (
+              {productsLoading ? (
                 <tr>
-                  <td colSpan="5" className="p-6 text-center text-gray-500">
-                    Loading items...
+                  <td colSpan="6" className="p-6 text-center text-gray-500">
+                    Loading products...
                   </td>
                 </tr>
-              ) : filteredItems.length === 0 ? (
+              ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="p-6 text-center text-gray-500">
-                    No items found
+                  <td colSpan="6" className="p-6 text-center text-gray-500">
+                    No products found
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item) => (
-                  <tr
-                    key={item._id}
-                    className="hover:bg-indigo-50/40 transition"
-                  >
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        {item.images?.[0] ? (
-                          <img
-                            src={item.images[0]}
-                            alt={item.name}
-                            className="w-10 h-10 rounded object-cover border"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400">
-                            📦
-                          </div>
-                        )}
+                filteredProducts.map((product) => {
+                  const stock = Number(product.stock || 0);
+                  const outOfStock = stock <= 0;
 
-                        <div>
-                          <div className="font-semibold text-gray-900">
-                            {item.name}
-                          </div>
+                  return (
+                    <tr
+                      key={product._id}
+                      className={`hover:bg-indigo-50/40 transition ${
+                        outOfStock ? "opacity-60" : ""
+                      }`}
+                    >
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          {product.image ? (
+                            <img
+                              src={product.image}
+                              alt={product.productName}
+                              className="w-10 h-10 rounded object-cover border"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400">
+                              📦
+                            </div>
+                          )}
 
-                          <div className="text-xs text-gray-500">
-                            {item.brand || "No Brand"}
+                          <div>
+                            <div className="font-semibold text-gray-900">
+                              {product.productName}
+                            </div>
+
+                            <div className="text-xs text-gray-500">
+                              {product.brand || "No Brand"}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="p-3 text-gray-500 font-mono">
-                      {item.hsnCode || item.itemCode || "—"}
-                    </td>
+                      <td className="p-3 text-gray-500 font-mono">
+                        {product.hsn || product.modelNo || "—"}
+                      </td>
 
-                    <td className="p-3 font-medium text-gray-600">
-                      {item.openingStock || 0}
-                    </td>
+                      <td className="p-3 font-medium">
+                        {outOfStock ? (
+                          <span className="bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide">
+                            Out of Stock
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">{stock}</span>
+                        )}
+                      </td>
 
-                    <td className="p-3 text-green-700 font-semibold">
-                      ₹ {Number(item.salesPrice || 0).toLocaleString("en-IN")}
-                    </td>
+                      <td className="p-3 text-green-700 font-semibold">
+                        ₹ {Number(product.price || 0).toLocaleString("en-IN")}
+                      </td>
 
-                    <td className="p-3 text-center">
-                      <button
-                        onClick={() => handleAddItemClick(item)}
-                        className="px-4 py-2 border border-blue-200 text-blue-600 bg-blue-50 rounded hover:bg-blue-600 hover:text-white transition"
-                      >
-                        + Add
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      <td className="p-3">
+                        <input
+                          type="number"
+                          min={1}
+                          max={stock > 0 ? stock : 1}
+                          disabled={outOfStock}
+                          value={getQty(product)}
+                          onChange={(e) => setQty(product, e.target.value)}
+                          className="w-16 border border-gray-200 rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+                      </td>
+
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => onAdd(product)}
+                          disabled={outOfStock}
+                          className={`px-4 py-2 border rounded transition ${
+                            outOfStock
+                              ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
+                              : "border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white"
+                          }`}
+                        >
+                          {outOfStock ? "Unavailable" : "+ Add"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -244,17 +297,11 @@ export default function InvoiceItemModal({
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-blue-600 font-medium hover:underline cursor-pointer">
-              Show 0 Item(s) Selected
-            </span>
             <button
               onClick={() => setShowItemModal(false)}
               className="border border-gray-300 rounded px-4 py-1.5 bg-white text-gray-700 hover:bg-gray-100 transition"
             >
               Cancel [ESC]
-            </button>
-            <button className="bg-indigo-100 text-indigo-400 font-semibold px-4 py-1.5 rounded cursor-not-allowed">
-              Add to Bill [F7]
             </button>
           </div>
         </div>
