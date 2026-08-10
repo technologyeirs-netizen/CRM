@@ -3,10 +3,10 @@ const mongoose = require('mongoose');
 const DistributionSchema = new mongoose.Schema(
   {
     assignmentId: { type: String, required: [true, 'Assignment ID is required'], unique: true, trim: true },
-    prospect: {
+    client: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Prospect',
-      required: [true, 'Prospect is required'],
+      ref: 'Client',
+      required: [true, 'Client is required'],
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
@@ -39,6 +39,6 @@ const DistributionSchema = new mongoose.Schema(
 );
 
 DistributionSchema.index({ assignmentId: 'text' });
-DistributionSchema.index({ prospect: 1, assignedTo: 1, assignedAt: -1 });
+DistributionSchema.index({ client: 1, assignedTo: 1, assignedAt: -1 });
 
 module.exports = mongoose.model('Distribution', DistributionSchema);

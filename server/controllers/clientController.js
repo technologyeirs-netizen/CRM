@@ -145,16 +145,12 @@ exports.updateClient = async (req, res) => {
   }
 };
 
-// @desc    Delete client (soft delete)
+// @desc    Delete client (permanent)
 // @route   DELETE /api/clients/:id
 // @access  Private/Admin
 exports.deleteClient = async (req, res) => {
   try {
-    const client = await Client.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: false },
-      { isDeleted: true },
-      { new: true }
-    );
+    const client = await Client.findByIdAndDelete(req.params.id);
     if (!client) {
       return res.status(404).json({ success: false, message: 'Client not found' });
     }

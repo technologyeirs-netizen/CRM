@@ -1,5 +1,5 @@
 const Distribution = require('../models/Distribution');
-const Prospect = require('../models/Prospect');
+const Client = require('../models/Client');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
 
@@ -43,8 +43,8 @@ exports.getDistributions = async (req, res) => {
 
     if (search) {
       const regex = new RegExp(escapeRegex(search), 'i');
-      const [matchedProspects, matchedEmployees] = await Promise.all([
-        Prospect.find({
+      const [matchedClients, matchedEmployees] = await Promise.all([
+        Client.find({
           isDeleted: false,
           $or: [
             { firstName: { $regex: regex } },
@@ -66,14 +66,14 @@ exports.getDistributions = async (req, res) => {
 
       query.$or = [
         { assignmentId: { $regex: regex } },
-        { prospect: { $in: matchedProspects.map((item) => item._id) } },
+        { client: { $in: matchedClients.map((item) => item._id) } },
         { assignedTo: { $in: matchedEmployees.map((item) => item._id) } },
       ];
     }
 
     const total = await Distribution.countDocuments(query);
     const distributions = await Distribution.find(query)
-      .populate('prospect', 'firstName lastName email phone company stage')
+      .populate('client', 'firstName lastName email phone alternatePhone company address status source tags notes totalPurchaseValue')
       .populate('assignedTo', 'name email role department region')
       .populate('assignedBy', 'name email role')
       .sort({ createdAt: -1 })
@@ -110,7 +110,7 @@ exports.getMyDistributions = async (req, res) => {
 
     if (search) {
       const regex = new RegExp(escapeRegex(search), 'i');
-      const matchedProspects = await Prospect.find({
+      const matchedClients = await Client.find({
         isDeleted: false,
         $or: [
           { firstName: { $regex: regex } },
@@ -124,13 +124,13 @@ exports.getMyDistributions = async (req, res) => {
       query.$or = [
         { assignmentId: { $regex: regex } },
         { notes: { $regex: regex } },
-        { prospect: { $in: matchedProspects.map((item) => item._id) } },
+        { client: { $in: matchedClients.map((item) => item._id) } },
       ];
     }
 
     const total = await Distribution.countDocuments(query);
     const distributions = await Distribution.find(query)
-      .populate('prospect', 'firstName lastName email phone company stage')
+      .populate('client', 'firstName lastName email phone alternatePhone company address status source tags notes totalPurchaseValue')
       .populate('assignedTo', 'name email role department region')
       .populate('assignedBy', 'name email role')
       .sort({ updatedAt: -1, createdAt: -1 })
@@ -192,7 +192,7 @@ exports.updateMyDistribution = async (req, res) => {
     await distribution.save();
 
     const populatedDistribution = await Distribution.findById(distribution._id)
-      .populate('prospect', 'firstName lastName email phone company stage')
+      .populate('client', 'firstName lastName email phone alternatePhone company address status source tags notes totalPurchaseValue')
       .populate('assignedTo', 'name email role department region')
       .populate('assignedBy', 'name email role');
 
@@ -207,19 +207,19 @@ exports.updateMyDistribution = async (req, res) => {
 // @access  Private/Admin
 exports.createDistribution = async (req, res) => {
   try {
-    const { prospect, assignedTo, status, priority, startingDate, dueDate, notes } = req.body;
+    const { client, assignedTo, status, priority, startingDate, dueDate, notes } = req.body;
 
-    if (!prospect || !assignedTo) {
-      return res.status(400).json({ success: false, message: 'Prospect and employee are required' });
+    if (!client || !assignedTo) {
+      return res.status(400).json({ success: false, message: 'Client and employee are required' });
     }
 
-    const [prospectRecord, employeeRecord] = await Promise.all([
-      Prospect.findOne({ _id: prospect, isDeleted: false }),
+    const [clientRecord, employeeRecord] = await Promise.all([
+      Client.findOne({ _id: client, isDeleted: false }),
       Employee.findOne({ _id: assignedTo, isDeleted: false }),
     ]);
 
-    if (!prospectRecord) {
-      return res.status(404).json({ success: false, message: 'Prospect not found' });
+    if (!clientRecord) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
     }
 
     if (!employeeRecord) {
@@ -230,7 +230,7 @@ exports.createDistribution = async (req, res) => {
 
     const distribution = await Distribution.create({
       assignmentId,
-      prospect,
+      client,
       assignedTo,
       assignedBy: req.user.id,
       status: status || 'assigned',
@@ -242,13 +242,13 @@ exports.createDistribution = async (req, res) => {
     });
 
     const populatedDistribution = await Distribution.findById(distribution._id)
-      .populate('prospect', 'firstName lastName email phone company stage')
+      .populate('client', 'firstName lastName email phone alternatePhone company address status source tags notes totalPurchaseValue')
       .populate('assignedTo', 'name email role department region')
       .populate('assignedBy', 'name email role');
 
     res.status(201).json({
       success: true,
-      message: 'Prospect assigned successfully',
+      message: 'Client assigned successfully',
       distribution: populatedDistribution,
     });
   } catch (error) {
@@ -278,7 +278,7 @@ exports.createDistribution = async (req, res) => {
 // @access  Private/Admin
 exports.updateDistribution = async (req, res) => {
   try {
-    const { prospect, assignedTo, status, priority, startingDate, dueDate, notes } = req.body;
+    const { client, assignedTo, status, priority, startingDate, dueDate, notes } = req.body;
     const updatePayload = {
       status,
       priority,
@@ -287,12 +287,12 @@ exports.updateDistribution = async (req, res) => {
       notes,
     };
 
-    if (prospect) {
-      const prospectRecord = await Prospect.findOne({ _id: prospect, isDeleted: false });
-      if (!prospectRecord) {
-        return res.status(404).json({ success: false, message: 'Prospect not found' });
+    if (client) {
+      const clientRecord = await Client.findOne({ _id: client, isDeleted: false });
+      if (!clientRecord) {
+        return res.status(404).json({ success: false, message: 'Client not found' });
       }
-      updatePayload.prospect = prospect;
+      updatePayload.client = client;
     }
 
     if (assignedTo) {
@@ -312,7 +312,7 @@ exports.updateDistribution = async (req, res) => {
       updatePayload,
       { new: true, runValidators: true }
     )
-      .populate('prospect', 'firstName lastName email phone company stage')
+      .populate('client', 'firstName lastName email phone alternatePhone company address status source tags notes totalPurchaseValue')
       .populate('assignedTo', 'name email role department region')
       .populate('assignedBy', 'name email role');
 

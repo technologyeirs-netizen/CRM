@@ -29,6 +29,7 @@ const EmployeeDashboardPage = () => {
   const [statusSavingId, setStatusSavingId] = useState('');
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [profileForm, setProfileForm] = useState(defaultProfileForm);
+  const [viewClient, setViewClient] = useState(null);
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -215,6 +216,7 @@ const EmployeeDashboardPage = () => {
                 <th>Current Status</th>
                 <th>Priority</th>
                 <th>Assigned On</th>
+                <th>Client Details</th>
                 <th>Update Status</th>
               </tr>
             </thead>
@@ -223,12 +225,28 @@ const EmployeeDashboardPage = () => {
                 <tr key={item._id}>
                   <td style={{ fontWeight: 600 }}>{item.assignmentId}</td>
                   <td>
-                    <div>{item.prospect?.firstName} {item.prospect?.lastName}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.prospect?.company || item.prospect?.email || '—'}</div>
+                    <div>{item.client?.firstName} {item.client?.lastName}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.client?.company || item.client?.email || '—'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.client?.phone || '—'}</div>
+                    {item.client?.address?.city && (
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {[item.client.address.city, item.client.address.state].filter(Boolean).join(', ')}
+                      </div>
+                    )}
                   </td>
                   <td>{String(item.status || '').replace('_', ' ')}</td>
                   <td>{String(item.priority || '').charAt(0).toUpperCase() + String(item.priority || '').slice(1)}</td>
                   <td>{item.assignedAt ? new Date(item.assignedAt).toLocaleDateString() : '—'}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={!item.client}
+                      onClick={() => setViewClient(item.client)}
+                    >
+                      View Details
+                    </button>
+                  </td>
                   <td>
                     <select
                       className="form-control"
@@ -244,7 +262,7 @@ const EmployeeDashboardPage = () => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <div className="empty-state">
                       <h3>No assignments yet</h3>
                       <p>Assignments will appear here when an admin allocates work to you.</p>
@@ -312,6 +330,83 @@ const EmployeeDashboardPage = () => {
             </div>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!viewClient}
+        onClose={() => setViewClient(null)}
+        title="Client Details"
+        footer={
+          <button type="button" className="btn btn-secondary" onClick={() => setViewClient(null)}>Close</button>
+        }
+      >
+        {viewClient && (
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Name</label>
+                <div className="form-control" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <FiUser /> {viewClient.firstName} {viewClient.lastName}
+                </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Email</label>
+                <div className="form-control" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <FiMail /> {viewClient.email || '—'}
+                </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Phone</label>
+                <div className="form-control" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <FiPhone /> {viewClient.phone || '—'}
+                </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Alternate Phone</label>
+                <div className="form-control">{viewClient.alternatePhone || '—'}</div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Company</label>
+                <div className="form-control">{viewClient.company || '—'}</div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Status</label>
+                <div className="form-control">{viewClient.status || '—'}</div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Source</label>
+                <div className="form-control">{viewClient.source || '—'}</div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Total Purchase Value</label>
+                <div className="form-control">{viewClient.totalPurchaseValue ?? 0}</div>
+              </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Address</label>
+              <div className="form-control" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <FiMapPin />
+                {[
+                  viewClient.address?.street,
+                  viewClient.address?.city,
+                  viewClient.address?.state,
+                  viewClient.address?.zipCode,
+                  viewClient.address?.country,
+                ].filter(Boolean).join(', ') || '—'}
+              </div>
+            </div>
+            {Array.isArray(viewClient.tags) && viewClient.tags.length > 0 && (
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Tags</label>
+                <div className="form-control">{viewClient.tags.join(', ')}</div>
+              </div>
+            )}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Notes</label>
+              <div className="form-control">{viewClient.notes || '—'}</div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
