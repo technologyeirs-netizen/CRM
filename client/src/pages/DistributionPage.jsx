@@ -4,12 +4,12 @@ import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
 import Modal from '../components/common/Modal';
 import { distributionService } from '../services/distributionService';
-import { prospectService } from '../services/prospectService';
+import { clientService } from '../services/clientService';
 import { employeeService } from '../services/employeeService';
 import { useAuth } from '../context/AuthContext';
 
 const initialForm = {
-  prospect: '',
+  client: '',
   assignedTo: '',
   status: 'assigned',
   priority: 'medium',
@@ -33,7 +33,7 @@ const normalizePriority = (value) => {
 const DistributionPage = () => {
   const { isAdmin } = useAuth();
   const [items, setItems] = useState([]);
-  const [prospects, setProspects] = useState([]);
+  const [clients, setClients] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,10 +47,10 @@ const DistributionPage = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [listRes, statsRes, prospectsRes, employeesRes] = await Promise.all([
+      const [listRes, statsRes, clientsRes, employeesRes] = await Promise.all([
         distributionService.getAll(filters),
         distributionService.getStats(),
-        prospectService.getAll({ page: 1, limit: 1000 }),
+        clientService.getAll({ page: 1, limit: 1000 }),
         employeeService.getAll({ page: 1, limit: 1000, status: 'active' }),
       ]);
       const distributionList = Array.isArray(listRes?.data?.distributions) ? listRes.data.distributions : [];
@@ -58,14 +58,14 @@ const DistributionPage = () => {
       setTotal(Number(listRes?.data?.total) || 0);
       setTotalPages(Number(listRes?.data?.totalPages) || 1);
       setStats(statsRes?.data?.stats || null);
-      setProspects(Array.isArray(prospectsRes?.data?.prospects) ? prospectsRes.data.prospects : []);
+      setClients(Array.isArray(clientsRes?.data?.clients) ? clientsRes.data.clients : []);
       setEmployees(Array.isArray(employeesRes?.data?.employees) ? employeesRes.data.employees : []);
     } catch (_) {
       setItems([]);
       setTotal(0);
       setTotalPages(1);
       setStats(null);
-      setProspects([]);
+      setClients([]);
       setEmployees([]);
       toast.error('Failed to load distribution data');
     }
@@ -85,7 +85,7 @@ const DistributionPage = () => {
   const openEdit = (item) => {
     setEditData(item);
     setFormData({
-      prospect: item.prospect?._id || item.prospect || '',
+      client: item.client?._id || item.client || '',
       assignedTo: item.assignedTo?._id || item.assignedTo || '',
       status: item.status || 'assigned',
       priority: normalizePriority(item.priority),
@@ -100,7 +100,7 @@ const DistributionPage = () => {
     e.preventDefault();
     try {
       const payload = {
-        prospect: formData.prospect,
+        client: formData.client,
         assignedTo: formData.assignedTo,
         status: formData.status,
         priority: formData.priority,
@@ -135,12 +135,12 @@ const DistributionPage = () => {
   };
 
   const distributionList = Array.isArray(items) ? items : [];
-  const prospectOptions = useMemo(
-    () => prospects.map((prospect) => ({
-      value: prospect._id,
-      label: `${prospect.firstName} ${prospect.lastName} (${prospect.email})`,
+  const clientOptions = useMemo(
+    () => clients.map((client) => ({
+      value: client._id,
+      label: `${client.firstName} ${client.lastName} (${client.email})`,
     })),
-    [prospects]
+    [clients]
   );
   const employeeOptions = useMemo(
     () => employees.map((employee) => ({
@@ -251,10 +251,10 @@ const DistributionPage = () => {
                     <tr key={item._id}>
                       <td style={{ fontWeight: 600 }}>{item.assignmentId}</td>
                       <td>
-                        <div>{item.prospect?.firstName} {item.prospect?.lastName}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.prospect?.email || '—'}</div>
+                        <div>{item.client?.firstName} {item.client?.lastName}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.client?.email || '—'}</div>
                       </td>
-                      <td>{item.prospect?.phone || '—'}</td>
+                      <td>{item.client?.phone || '—'}</td>
                       <td>
                         <div>{item.assignedTo?.name || '—'}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.assignedTo?.role || ''}</div>
@@ -324,9 +324,9 @@ const DistributionPage = () => {
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Service Request</label>
-              <select className="form-control" required value={formData.prospect} onChange={(e) => setFormData((p) => ({ ...p, prospect: e.target.value }))}>
+              <select className="form-control" required value={formData.client} onChange={(e) => setFormData((p) => ({ ...p, client: e.target.value }))}>
                 <option value="">Select Service Request</option>
-                {prospectOptions.map((option) => (
+                {clientOptions.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
