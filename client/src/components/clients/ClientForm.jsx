@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import { clientService } from '../../services/clientService';
-import API from '../../api/axios';
 
 const defaultForm = {
   firstName: '', lastName: '', email: '', phone: '', alternatePhone: '',
@@ -13,22 +12,15 @@ const defaultForm = {
 
 const ClientForm = ({ isOpen, onClose, editData, onSaved }) => {
   const [form, setForm] = useState(defaultForm);
-  const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(false);
   const isEdit = !!editData;
 
   useEffect(() => {
-    if (isOpen) {
-      // Load employees from the Employee model
-      API.get('/employees', { params: { status: 'active', limit: 500 } })
-        .then(({ data }) => setAgents(data.employees || []))
-        .catch(() => toast.error('Failed to load employees'));
-    }
     if (editData) {
+      const { assignedTo, ...rest } = editData;
       setForm({
-        ...editData,
+        ...rest,
         tags: editData.tags?.join(', ') || '',
-        assignedTo: editData.assignedTo?._id || '',
         address: editData.address || defaultForm.address,
       });
     } else {
@@ -143,21 +135,6 @@ const ClientForm = ({ isOpen, onClose, editData, onSaved }) => {
             <label className="form-label">State</label>
             <input className="form-control" name="address.state" value={form.address.state} onChange={handleChange} placeholder="Maharashtra" />
           </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Assign To (Employee)</label>
-          <select className="form-control" name="assignedTo" value={form.assignedTo || ''} onChange={handleChange}>
-            <option value="">-- Select Employee --</option>
-            {agents.length > 0 ? (
-              agents.map((a) => (
-                <option key={a._id} value={a._id}>
-                  {a.name} ({a.role || 'Employee'}){a.region ? ` - ${a.region}` : ''}
-                </option>
-              ))
-            ) : (
-              <option disabled>No employees available</option>
-            )}
-          </select>
         </div>
         <div className="form-group">
           <label className="form-label">Tags (comma-separated)</label>
