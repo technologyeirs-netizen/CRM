@@ -13,6 +13,11 @@ import {
   FiShoppingBag,
   FiDownload,
   FiMail,
+  FiSmartphone,
+  FiGrid,
+  FiTool,
+  FiStar,
+  FiImage,
   FiChevronDown,
   FiChevronRight,
   FiLayers ,
@@ -193,6 +198,34 @@ const getNavItems = (role) => {
       to: '/campaigns',
       label: 'Campaigns',
       icon: FiTarget,
+    },
+
+    {
+      label: 'B2C (Website + App)',
+      icon: FiSmartphone,
+      children: [
+        { to: '/b2c', label: 'B2C Overview', icon: FiGrid },
+        { to: '/inventory/products', label: 'Products', icon: FiPackage },
+        { to: '/inventory/categories', label: 'Categories', icon: FiLayers },
+        {
+          to: '/inventory/subcategories',
+          label: 'Sub Categories',
+          icon: FiLayers,
+        },
+        { to: '/b2c/orders', label: 'Orders', icon: FiShoppingBag },
+        { to: '/b2c/services', label: 'Services', icon: FiTool },
+        {
+          to: '/b2c/service-bookings',
+          label: 'Service Bookings',
+          icon: FiCalendar,
+        },
+        { to: '/b2c/reviews', label: 'Reviews', icon: FiStar },
+        {
+          to: '/b2c/banners',
+          label: 'App Banners / Carousel',
+          icon: FiImage,
+        },
+      ],
     },
 
     ...(websiteSyncModulesEnabled

@@ -132,6 +132,13 @@ app.use('/api/distribution', require('./routes/distributionRoutes'));
 app.use('/api/campaigns', require('./routes/campaignRoutes'));
 app.use('/api/quotations', require('./routes/quotationRoutes'));
 app.use('/api/website-sync', require('./routes/websiteSyncRoutes'));
+
+// ── B2C section (App + Website live data — same shared MongoDB) ──────────
+app.use('/api/b2c/orders', require('./routes/b2cOrderRoutes'));
+app.use('/api/b2c/services', require('./routes/b2cServiceRoutes'));
+app.use('/api/b2c/service-bookings', require('./routes/b2cServiceBookingRoutes'));
+app.use('/api/b2c/reviews', require('./routes/b2cReviewRoutes'));
+app.use('/api/b2c/banners', require('./routes/b2cBannerRoutes'));
 app.use("/api/sales-settings",require("./routes/salesSettingRoutes"));
 app.use('/api/fsm', require('./routes/fsmRoutes'));
 app.use('/api/fsm/jobs', require('./routes/fsmJobRoutes'));

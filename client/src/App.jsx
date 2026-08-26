@@ -58,6 +58,14 @@ const WebsiteUsersPage = lazy(() => import("./pages/WebsiteUsersPage"));
 const WebsiteOrdersPage = lazy(() => import("./pages/WebsiteOrdersPage"));
 const WebsiteBookingsPage = lazy(() => import("./pages/WebsiteBookingsPage"));
 const WebsiteContactsPage = lazy(() => import("./pages/WebsiteContactsPage"));
+const B2CHubPage = lazy(() => import("./pages/B2CHubPage"));
+const B2COrdersPage = lazy(() => import("./pages/B2COrdersPage"));
+const B2CServicesPage = lazy(() => import("./pages/B2CServicesPage"));
+const B2CServiceBookingsPage = lazy(() =>
+  import("./pages/B2CServiceBookingsPage")
+);
+const B2CReviewsPage = lazy(() => import("./pages/B2CReviewsPage"));
+const B2CBannersPage = lazy(() => import("./pages/B2CBannersPage"));
 
 const websiteSyncModulesEnabled =
   String(
@@ -243,6 +251,15 @@ function App() {
                     />
                   </>
                 )}
+                <Route path="b2c" element={<B2CHubPage />} />
+                <Route path="b2c/orders" element={<B2COrdersPage />} />
+                <Route path="b2c/services" element={<B2CServicesPage />} />
+                <Route
+                  path="b2c/service-bookings"
+                  element={<B2CServiceBookingsPage />}
+                />
+                <Route path="b2c/reviews" element={<B2CReviewsPage />} />
+                <Route path="b2c/banners" element={<B2CBannersPage />} />
               </Route>
             </Route>
             <Route path="*" element={<RoleBasedHome />} />

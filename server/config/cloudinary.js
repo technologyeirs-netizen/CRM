@@ -1,4 +1,6 @@
 const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const multer = require('multer');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -6,4 +8,25 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Multer storage piping straight to Cloudinary — used by the B2C banner
+// upload endpoint (same Cloudinary account/folder-style the website uses).
+const bannerStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'eirs-app-banners',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 1600, height: 900, crop: 'limit', quality: 'auto:good' }],
+  },
+});
+
+const bannerUpload = multer({
+  storage: bannerStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'), false);
+  },
+});
+
 module.exports = cloudinary;
+module.exports.bannerUpload = bannerUpload;
