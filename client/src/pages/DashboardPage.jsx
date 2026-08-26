@@ -41,12 +41,12 @@ const DashboardPage = () => {
         setInterStats(is.data);
         const invoices = invoiceRes?.data?.invoices || [];
 
-const salesAmount = invoices.reduce(
-  (sum, invoice) => sum + Number(invoice.amount || 0),
-  0
-);
+        const salesAmount = invoices.reduce(
+          (sum, invoice) => sum + Number(invoice.amount || 0),
+          0,
+        );
 
-setTotalSales(salesAmount);
+        setTotalSales(salesAmount);
       } catch (_) {}
       setLoading(false);
     };
@@ -58,106 +58,153 @@ setTotalSales(salesAmount);
   return (
     <div>
       {/* Summary Stats */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div
-            className="stat-icon"
-            style={{ background: "var(--primary-light)" }}
-          >
-            <FiUsers color="var(--primary)" />
-          </div>
-          <div className="stat-info">
-            <h4>{clientStats?.stats?.total ?? "—"}</h4>
-            <p>Total Clients</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div
-            className="stat-icon"
-            style={{ background: "var(--success-light)" }}
-          >
-            <FiUsers color="var(--success)" />
-          </div>
-          <div className="stat-info">
-            <h4>{clientStats?.stats?.active ?? "—"}</h4>
-            <p>Active Clients</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div
-            className="stat-icon"
-            style={{ background: "var(--warning-light)" }}
-          >
-            <FiClock color="var(--warning)" />
-          </div>
-          <div className="stat-info">
-            <h4>{followStats?.stats?.scheduled ?? "—"}</h4>
-            <p>Scheduled Follow-Ups</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div
-            className="stat-icon"
-            style={{ background: "var(--danger-light)" }}
-          >
-            <FiAlertTriangle color="var(--danger)" />
-          </div>
-          <div className="stat-info">
-            <h4>{followStats?.stats?.overdue ?? "—"}</h4>
-            <p>Overdue Follow-Ups</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: "#ede9fe" }}>
-            <FiMessageSquare color="var(--secondary)" />
-          </div>
-          <div className="stat-info">
-            <h4>{interStats?.stats?.open ?? "—"}</h4>
-            <p>Open Interactions</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div
-            className="stat-icon"
-            style={{ background: "var(--success-light)" }}
-          >
-            <FiCheckCircle color="var(--success)" />
-          </div>
-          <div className="stat-info">
-            <h4>{followStats?.stats?.completed ?? "—"}</h4>
-            <p>Completed Follow-Ups</p>
-          </div>
-        </div>
-      </div>
-      <Link
-  to="/invoice"
-  style={{
-    textDecoration: "none",
-    color: "inherit",
-  }}
->
-  <div
-    className="stat-card"
-    style={{
-      cursor: "pointer",
-      transition: "all 0.2s ease",
-    }}
-  >
-    <div
-      className="stat-icon"
-      style={{
-        background: "#ede9fe",
-      }}
-    >
-      <FiDollarSign color="#7c3aed" />
-    </div>
+{/* Summary Stats */}
+<div className="stats-grid">
 
-    <div className="stat-info">
-      <h4>₹ {totalSales.toLocaleString("en-IN")}</h4>
-      <p>Total Sales</p>
+  {/* Total Clients */}
+  <Link
+    to="/clients"
+    className="block w-full h-full no-underline text-inherit hover:no-underline"
+  >
+    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div
+        className="stat-icon shrink-0"
+        style={{ background: "var(--primary-light)" }}
+      >
+        <FiUsers color="var(--primary)" />
+      </div>
+
+      <div className="stat-info min-w-0">
+        <h4>{clientStats?.stats?.total ?? "—"}</h4>
+        <p className="whitespace-nowrap">Total Clients</p>
+      </div>
     </div>
-  </div>
-</Link>
+  </Link>
+
+  {/* Active Clients */}
+  <Link
+    to="/clients"
+    className="block w-full h-full no-underline text-inherit hover:no-underline"
+  >
+    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div
+        className="stat-icon shrink-0"
+        style={{ background: "var(--success-light)" }}
+      >
+        <FiUsers color="var(--success)" />
+      </div>
+
+      <div className="stat-info min-w-0">
+        <h4>{clientStats?.stats?.active ?? "—"}</h4>
+        <p className="whitespace-nowrap">Active Clients</p>
+      </div>
+    </div>
+  </Link>
+
+  {/* Scheduled Follow-Ups */}
+  <Link
+    to="/followups"
+    className="block w-full h-full no-underline text-inherit hover:no-underline"
+  >
+    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div
+        className="stat-icon shrink-0"
+        style={{ background: "var(--warning-light)" }}
+      >
+        <FiClock color="var(--warning)" />
+      </div>
+
+      <div className="stat-info min-w-0">
+        <h4>{followStats?.stats?.scheduled ?? "—"}</h4>
+        <p className="leading-5">Scheduled Follow-Ups</p>
+      </div>
+    </div>
+  </Link>
+
+  {/* Overdue Follow-Ups */}
+  <Link
+    to="/followups"
+    className="block w-full h-full no-underline text-inherit hover:no-underline"
+  >
+    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div
+        className="stat-icon shrink-0"
+        style={{ background: "var(--danger-light)" }}
+      >
+        <FiAlertTriangle color="var(--danger)" />
+      </div>
+
+      <div className="stat-info min-w-0">
+        <h4>{followStats?.stats?.overdue ?? "—"}</h4>
+        <p className="whitespace-nowrap">Overdue Follow-Ups</p>
+      </div>
+    </div>
+  </Link>
+
+  {/* Open Interactions */}
+  <Link
+    to="/interactions"
+    className="block w-full h-full no-underline text-inherit hover:no-underline"
+  >
+    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div
+        className="stat-icon shrink-0"
+        style={{ background: "#ede9fe" }}
+      >
+        <FiMessageSquare color="var(--secondary)" />
+      </div>
+
+      <div className="stat-info min-w-0">
+        <h4>{interStats?.stats?.open ?? "—"}</h4>
+        <p className="whitespace-nowrap">Open Interactions</p>
+      </div>
+    </div>
+  </Link>
+
+  {/* Completed Follow-Ups */}
+  <Link
+    to="/followups"
+    className="block w-full h-full no-underline text-inherit hover:no-underline"
+  >
+    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div
+        className="stat-icon shrink-0"
+        style={{ background: "var(--success-light)" }}
+      >
+        <FiCheckCircle color="var(--success)" />
+      </div>
+
+      <div className="stat-info min-w-0">
+        <h4>{followStats?.stats?.completed ?? "—"}</h4>
+        <p className="leading-5">Completed Follow-Ups</p>
+      </div>
+    </div>
+  </Link>
+
+  {/* Total Sales */}
+  <Link
+    to="/invoice"
+    className="block w-full h-full no-underline text-inherit hover:no-underline"
+  >
+    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div
+        className="stat-icon shrink-0"
+        style={{ background: "#ede9fe" }}
+      >
+        <FiDollarSign color="#7c3aed" />
+      </div>
+
+      <div className="stat-info min-w-0 overflow-hidden">
+        <h4 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
+          ₹ {totalSales.toLocaleString("en-IN")}
+        </h4>
+
+        <p className="whitespace-nowrap">Total Sales</p>
+      </div>
+    </div>
+  </Link>
+
+</div>
 
       <div className="dashboard-grid">
         {/* Recent Clients */}
