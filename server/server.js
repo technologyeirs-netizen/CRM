@@ -123,6 +123,7 @@ app.use('/api/employees', require('./routes/employeeRoutes'));
 app.use('/api/items', require('./routes/itemRoutes'));
 app.use('/api/sales-invoices', require('./routes/salesInvoiceRoutes'));
 app.use('/api/credit-notes', require('./routes/creditNoteRoutes'));
+app.use('/api/converted-quotations', require('./routes/convertedQuotationRoutes'));
 app.use('/api/delivery-challans', require('./routes/deliveryChallanRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));

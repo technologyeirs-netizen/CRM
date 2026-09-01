@@ -62,37 +62,45 @@ const getNavItems = (role) => {
       icon: FiUsers,
     },
 
-    // SALES DROPDOWN
+  {
+  label: 'Account',
+  icon: FiShoppingBag,
+  children: [
     {
-      label: 'Sales',
-      icon: FiShoppingBag,
-      children: [
-        {
-          to: '/invoice',
-          label: 'Invoice',
-          icon: FiFileText,
-        },
-        {
-          to: '/credit-note',
-          label: 'Credit Note',
-          icon: FiFileText,
-        },
-        {
-          to: '/delivery-challan',
-          label: 'Delivery Challan',
-          icon: FiTruck,
-        },
-        
-        {
-          to: '/sales-settings',
-          label: 'Sales Settings',
-          icon: FiPackage,
-        },
-      ],
+      to: '/account',
+      label: 'Account Overview',
+      icon: FiGrid,
     },
+    {
+      to: '/invoice',
+      label: 'Invoice',
+      icon: FiFileText,
+    },
+    {
+      to: '/credit-note',
+      label: 'Credit Note',
+      icon: FiFileText,
+    },
+    {
+      to: '/delivery-challan',
+      label: 'Delivery Challan',
+      icon: FiTruck,
+    },
+    {
+      to: '/sales-settings',
+      label: 'Account Settings',
+      icon: FiPackage,
+    },
+    {
+      to: '/converted-quotations',
+      label: 'Converted Quotations',
+      icon: FiFileText,
+    },
+  ],
+},
 
     // INVENTORY BELOW SALES
-    // INVENTORY DROPDOWN
+    // INVENTORY DROPDOWN---------------
 {
   label: 'Inventory',
   icon: FiPackage,
@@ -126,11 +134,11 @@ const getNavItems = (role) => {
       icon: FiShoppingBag,
     },
 
-    {
-      to: '/bill-quotation',
-      label: 'Bill Quotation',
-      icon: FiFileText,
-    },
+    // {
+    //   to: '/bill-quotation',
+    //   label: 'Bill Quotation',
+    //   icon: FiFileText,
+    // },
 
     ...(isAdmin
       ? [

@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
 import {
-  FiUsers,
-  FiCalendar,
-  FiMessageSquare,
-  FiAlertTriangle,
-  FiCheckCircle,
-  FiClock,
   FiDollarSign,
+  FiTrendingUp,
+  FiTool,
+  FiTruck,
 } from "react-icons/fi";
 import { clientService } from "../services/clientService";
 import { followUpService } from "../services/followUpService";
@@ -59,148 +57,152 @@ const DashboardPage = () => {
     <div>
       {/* Summary Stats */}
 {/* Summary Stats */}
-<div className="stats-grid">
+<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
 
-  {/* Total Clients */}
+  {/* Accounts */}
   <Link
-    to="/clients"
-    className="block w-full h-full no-underline text-inherit hover:no-underline"
+    to="/account"
+    className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
   >
-    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div
-        className="stat-icon shrink-0"
-        style={{ background: "var(--primary-light)" }}
-      >
-        <FiUsers color="var(--primary)" />
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm font-medium text-slate-500">
+          Accounts
+        </p>
+
+        <h3 className="mt-2 text-2xl font-bold text-slate-900">
+          ₹{totalSales.toLocaleString("en-IN")}
+        </h3>
+
+        <p className="mt-1 text-xs text-slate-500">
+          Total Sales
+        </p>
       </div>
 
-      <div className="stat-info min-w-0">
-        <h4>{clientStats?.stats?.total ?? "—"}</h4>
-        <p className="whitespace-nowrap">Total Clients</p>
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white">
+        <FiDollarSign size={23} />
       </div>
+    </div>
+
+    <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+      <span className="text-sm font-medium text-slate-600">
+        Account Details
+      </span>
+
+      <span className="text-sm font-semibold text-blue-600 transition-transform duration-300 group-hover:translate-x-1">
+        View →
+      </span>
     </div>
   </Link>
 
-  {/* Active Clients */}
+
+  {/* Sales Team */}
   <Link
-    to="/clients"
-    className="block w-full h-full no-underline text-inherit hover:no-underline"
+    to="/sales-team"
+    className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
   >
-    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div
-        className="stat-icon shrink-0"
-        style={{ background: "var(--success-light)" }}
-      >
-        <FiUsers color="var(--success)" />
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm font-medium text-slate-500">
+          Sales Team
+        </p>
+
+        <h3 className="mt-2 text-2xl font-bold text-slate-900">
+          {clientStats?.stats?.total ?? clientStats?.total ?? 0}
+        </h3>
+
+        <p className="mt-1 text-xs text-slate-500">
+          Total Clients
+        </p>
       </div>
 
-      <div className="stat-info min-w-0">
-        <h4>{clientStats?.stats?.active ?? "—"}</h4>
-        <p className="whitespace-nowrap">Active Clients</p>
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition-all duration-300 group-hover:bg-emerald-600 group-hover:text-white">
+        <FiTrendingUp size={23} />
       </div>
+    </div>
+
+    <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+      <span className="text-sm font-medium text-slate-600">
+        Sales Overview
+      </span>
+
+      <span className="text-sm font-semibold text-emerald-600 transition-transform duration-300 group-hover:translate-x-1">
+        View →
+      </span>
     </div>
   </Link>
 
-  {/* Scheduled Follow-Ups */}
+
+  {/* Services Team */}
   <Link
-    to="/followups"
-    className="block w-full h-full no-underline text-inherit hover:no-underline"
+    to="/services-team"
+    className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
   >
-    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div
-        className="stat-icon shrink-0"
-        style={{ background: "var(--warning-light)" }}
-      >
-        <FiClock color="var(--warning)" />
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm font-medium text-slate-500">
+          Services Team
+        </p>
+
+        <h3 className="mt-2 text-2xl font-bold text-slate-900">
+          {interStats?.stats?.resolved ?? 0}
+        </h3>
+
+        <p className="mt-1 text-xs text-slate-500">
+          Resolved Interactions
+        </p>
       </div>
 
-      <div className="stat-info min-w-0">
-        <h4>{followStats?.stats?.scheduled ?? "—"}</h4>
-        <p className="leading-5">Scheduled Follow-Ups</p>
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600 transition-all duration-300 group-hover:bg-purple-600 group-hover:text-white">
+        <FiTool size={23} />
       </div>
+    </div>
+
+    <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+      <span className="text-sm font-medium text-slate-600">
+        Service Overview
+      </span>
+
+      <span className="text-sm font-semibold text-purple-600 transition-transform duration-300 group-hover:translate-x-1">
+        View →
+      </span>
     </div>
   </Link>
 
-  {/* Overdue Follow-Ups */}
+
+  {/* Delivery Team */}
   <Link
-    to="/followups"
-    className="block w-full h-full no-underline text-inherit hover:no-underline"
+    to="/delivery-team"
+    className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
   >
-    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div
-        className="stat-icon shrink-0"
-        style={{ background: "var(--danger-light)" }}
-      >
-        <FiAlertTriangle color="var(--danger)" />
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm font-medium text-slate-500">
+          Delivery Team
+        </p>
+
+        <h3 className="mt-2 text-2xl font-bold text-slate-900">
+          {followStats?.upcomingToday?.length ?? 0}
+        </h3>
+
+        <p className="mt-1 text-xs text-slate-500">
+          Today's Follow-Ups
+        </p>
       </div>
 
-      <div className="stat-info min-w-0">
-        <h4>{followStats?.stats?.overdue ?? "—"}</h4>
-        <p className="whitespace-nowrap">Overdue Follow-Ups</p>
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition-all duration-300 group-hover:bg-orange-600 group-hover:text-white">
+        <FiTruck size={23} />
       </div>
     </div>
-  </Link>
 
-  {/* Open Interactions */}
-  <Link
-    to="/interactions"
-    className="block w-full h-full no-underline text-inherit hover:no-underline"
-  >
-    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div
-        className="stat-icon shrink-0"
-        style={{ background: "#ede9fe" }}
-      >
-        <FiMessageSquare color="var(--secondary)" />
-      </div>
+    <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+      <span className="text-sm font-medium text-slate-600">
+        Delivery Overview
+      </span>
 
-      <div className="stat-info min-w-0">
-        <h4>{interStats?.stats?.open ?? "—"}</h4>
-        <p className="whitespace-nowrap">Open Interactions</p>
-      </div>
-    </div>
-  </Link>
-
-  {/* Completed Follow-Ups */}
-  <Link
-    to="/followups"
-    className="block w-full h-full no-underline text-inherit hover:no-underline"
-  >
-    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div
-        className="stat-icon shrink-0"
-        style={{ background: "var(--success-light)" }}
-      >
-        <FiCheckCircle color="var(--success)" />
-      </div>
-
-      <div className="stat-info min-w-0">
-        <h4>{followStats?.stats?.completed ?? "—"}</h4>
-        <p className="leading-5">Completed Follow-Ups</p>
-      </div>
-    </div>
-  </Link>
-
-  {/* Total Sales */}
-  <Link
-    to="/invoice"
-    className="block w-full h-full no-underline text-inherit hover:no-underline"
-  >
-    <div className="stat-card w-full h-[130px] min-h-[130px] cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-      <div
-        className="stat-icon shrink-0"
-        style={{ background: "#ede9fe" }}
-      >
-        <FiDollarSign color="#7c3aed" />
-      </div>
-
-      <div className="stat-info min-w-0 overflow-hidden">
-        <h4 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
-          ₹ {totalSales.toLocaleString("en-IN")}
-        </h4>
-
-        <p className="whitespace-nowrap">Total Sales</p>
-      </div>
+      <span className="text-sm font-semibold text-orange-600 transition-transform duration-300 group-hover:translate-x-1">
+        View →
+      </span>
     </div>
   </Link>
 

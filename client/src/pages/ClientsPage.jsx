@@ -7,7 +7,8 @@ import Spinner from '../components/common/Spinner';
 import StatusBadge from '../components/common/StatusBadge';
 import ClientForm from '../components/clients/ClientForm';
 import { useAuth } from '../context/AuthContext';
-import { format } from 'date-fns';
+import { format } from 'date-fns'; 
+
 
 const ClientsPage = () => {
   const { isAdmin } = useAuth();
@@ -174,7 +175,7 @@ const ClientsPage = () => {
           value={filters.source}
           onChange={(e) => setFilters((p) => ({ ...p, source: e.target.value, page: 1 }))}
         >
-          <option value="">All Sources</option>
+          <option value="">All Sources </option>
           {['website', 'referral', 'social_media', 'cold_call', 'market', 'other'].map((source) => (
             <option key={source} value={source}>{source.replace('_', ' ')}</option>
           ))}

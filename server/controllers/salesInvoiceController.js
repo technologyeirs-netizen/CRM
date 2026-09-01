@@ -3,39 +3,14 @@ const SalesSetting = require("../models/SalesSetting");
 const WebsiteProduct = require("../models/Products");
 
 // ============================================
-// STOCK HELPER
-// direction = -1  => deduct stock (invoice created/items added)
-// direction =  1  => restore stock (invoice deleted/items removed)
+// NOTE ON STOCK:
+// Sales Invoices no longer touch product stock at all.
+// Adding items to an invoice (create/edit) does NOT reduce
+// product quantity. Stock is only deducted when an invoice
+// is converted into a "Converted Quotation" (see
+// convertedQuotationController.js), which is when the sale
+// is treated as actually fulfilled from inventory.
 // ============================================
-const adjustProductStock = async (items = [], direction = -1) => {
-  for (const it of items) {
-    const productId = it.itemId || it._id;
-
-    if (!productId) continue;
-
-    const qty = Math.abs(Number(it.qty || 0));
-
-    if (!qty) continue;
-
-    try {
-      const product = await WebsiteProduct.findById(productId);
-
-      if (!product) continue;
-
-      const currentStock = Number(product.stock || 0);
-
-      let newStock = currentStock + direction * qty;
-
-      if (newStock < 0) newStock = 0;
-
-      product.stock = newStock;
-
-      await product.save();
-    } catch (stockErr) {
-      console.log("STOCK ADJUST ERROR =>", stockErr.message);
-    }
-  }
-};
 
 // ============================================
 // CREATE SALES INVOICE
@@ -358,8 +333,9 @@ console.log(
   invoice
 );
 
-// Deduct sold quantity from product stock
-await adjustProductStock(formattedItems, -1);
+// NOTE: Stock is intentionally NOT deducted here.
+// It is only deducted when this invoice is converted
+// into a Converted Quotation.
 
 const currentNumber = Number(
   preferences.currentInvoiceNumber || 1
@@ -557,8 +533,8 @@ if (!existingInvoice) {
   });
 }
 
-// Restore product stock for the deleted invoice's items
-await adjustProductStock(existingInvoice.items, 1);
+// NOTE: Invoices no longer deduct stock, so deleting one
+// does not need to restore any stock either.
 
 const invoice = await SalesInvoice.findByIdAndDelete(
 req.params.id
@@ -849,12 +825,9 @@ exports.updateSalesInvoice = async (req, res) => {
 
       );
 
-    // Reconcile stock: give back the old items' quantity, then
-    // deduct the quantity for the newly saved items.
-    if (oldInvoice) {
-      await adjustProductStock(oldInvoice.items, 1);
-    }
-    await adjustProductStock(formattedItems, -1);
+    // NOTE: Editing an invoice's items does not touch stock.
+    // Stock only changes when the invoice is converted into
+    // a Converted Quotation.
 
     return res.json({
 

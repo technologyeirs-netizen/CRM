@@ -21,6 +21,8 @@ import EditInvoicePage from "./pages/sales/EditInvoicePage";
 import CreateSalesInvoicePage from "./pages/sales/CreateInvoice";
 import DebitNotePage from "./pages/sales/DebitNote";
 import CreditInvoiceNote from "./pages/creditNote/CreditNoteInvoice";
+import ConvertedQuotationsPage from "./pages/convertedQuotation/ConvertedQuotationsPage";
+import ViewConvertedQuotationPage from "./pages/convertedQuotation/ViewConvertedQuotationPage";
 import CategoryPage from "./pages/inventory/CategoryPage";
 import GodownsPage from "./pages/inventory/GodownsPage";
 import ProductPage from "./pages/inventory/Product";
@@ -32,6 +34,10 @@ import DeliveryChallanPage from "./pages/deliveryChallan/DeliveryChallanPage";
 import CreateDeliveryChallanPage from "./pages/deliveryChallan/CreateDeliveryChallanPage";
 // import EditDeliveryChallanPage from "./pages/deliveryChallan/EditDeliveryChallanPage";
 import ViewDeliveryChallanPage from "./pages/deliveryChallan/ViewDeliveryChallanPage";
+import Account from "./pages/AccountPage";
+import SalesTeamDashboard from "./pages/SalesTeamDashboard";
+import ServicesTeamDashboard from "./pages/ServiceTeamDashboard";
+import DeliveryTeamDashboard from "./pages/DeliveryTeamDashboard";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
@@ -142,7 +148,16 @@ function App() {
                 />
                 <Route path="bill-quotation" element={<BillQuotationPage />} />
                 <Route path="inventory" element={<InventoryPage />} />
-                <Route path="invoice" element={<SalesInvoicePage />} />
+
+              
+
+<Route path="/sales-team" element={<SalesTeamDashboard />} />
+<Route path="/services-team" element={<ServicesTeamDashboard />} />
+<Route path="/delivery-team" element={<DeliveryTeamDashboard />} />
+
+             <Route path="account" element={<Account />} />
+
+<Route path="invoice" element={<SalesInvoicePage />} />
 
                 <Route path="invoice/view/:id" element={<ViewInvoicePage />} />
 
@@ -156,6 +171,16 @@ function App() {
                     path="sales-settings"
                     element={<SalesSettingPage />}
                   />
+
+                <Route
+                  path="/converted-quotations"
+                  element={<ConvertedQuotationsPage />}
+                />
+
+                <Route
+                  path="/converted-quotations/view/:id"
+                  element={<ViewConvertedQuotationPage />}
+                />
 
                 <Route path="/debit-note" element={<DebitNotePage />} />
 

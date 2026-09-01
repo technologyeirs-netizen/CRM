@@ -251,6 +251,27 @@ const salesSettingSchema = new mongoose.Schema(
       },
 
     },
+    // =====================================
+    // CONVERTED QUOTATION (invoice -> quotation) PREFERENCES
+    // =====================================
+    convertedQuotationPreferences: {
+
+      quotationPrefix: {
+        type: String,
+        default: "ET/CQ/",
+      },
+
+      financialYear: {
+        type: String,
+        default: "",
+      },
+
+      currentQuotationNumber: {
+        type: Number,
+        default: 1,
+      },
+
+    },
   },
   {
     timestamps: true,

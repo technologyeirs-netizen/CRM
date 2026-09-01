@@ -15,10 +15,12 @@ import {
   Trash2,
   HelpCircle,
   Download,
+  ArrowRightLeft,
 } from "lucide-react";
 
 import { salesInvoiceService } from "../../services/salesInvoiceService";
 import { creditNoteService } from "../../services/creditNoteService";
+import { convertedQuotationService } from "../../services/convertedQuotationService";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { salesSettingService } from "../../services/salesSettingService";
@@ -153,6 +155,37 @@ export default function SalesInvoicesDashboard() {
     );
   }
 };
+
+  // =========================
+  // CONVERT INVOICE TO QUOTATION
+  // (this is what actually deducts item stock)
+  // =========================
+  const handleConvertToQuotation = async (invoiceId) => {
+    try {
+      const ok = window.confirm(
+        "Convert this invoice to a quotation? This will deduct the item quantities from stock."
+      );
+      if (!ok) return;
+
+      const res = await convertedQuotationService.createFromInvoice(
+        invoiceId,
+        {}
+      );
+
+      if (res.data.success) {
+        toast.success("Invoice converted to Quotation successfully");
+
+        setActiveMenuIndex(null);
+
+        navigate("/converted-quotations");
+      }
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to convert invoice to quotation"
+      );
+    }
+  };
 
   const fetchInvoices = async () => {
     try {
@@ -628,6 +661,19 @@ export default function SalesInvoicesDashboard() {
                           >
                             <FileMinus size={16} className="text-gray-500" />
                             Issue Credit Note
+                          </button>
+                        </div>
+
+                        <div className="py-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleConvertToQuotation(invoice._id);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 font-normal"
+                          >
+                            <ArrowRightLeft size={16} className="text-gray-500" />
+                            Convert to Quotation
                           </button>
                         </div>
 
