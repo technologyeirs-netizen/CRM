@@ -9,6 +9,7 @@ const pageTitles = {
   '/customer-details': 'Complete Customer Details',
   '/purchase-history': 'Purchase History Tracking',
   '/bill-quotation': 'Bill Quotation',
+  '/converted-quotations': 'Converted Quotations',
   '/inventory': 'Inventory Management',
   '/followups': 'Follow-Up Scheduling',
   '/interactions': 'Interaction Logs',
