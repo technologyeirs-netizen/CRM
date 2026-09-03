@@ -8,6 +8,7 @@ import {
   FiSettings,
   FiArrowRight,
   FiBarChart2,
+  FiClipboard,
 } from 'react-icons/fi';
 
 const Account = () => {
@@ -46,15 +47,23 @@ const Account = () => {
       iconBg: 'bg-purple-50',
       iconColor: 'text-purple-600',
     },
+    {
+      title: 'Converted Quotations',
+      description: 'View and manage quotations converted into sales',
+      icon: FiClipboard,
+      path: '/converted-quotations',
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-600',
+    },
   ];
 
   return (
     <div className="min-h-full bg-slate-50 p-4 sm:p-6 lg:p-8">
-
+      
       {/* PAGE HEADER */}
       <div className="mb-8">
         <div className="flex items-center gap-4">
-
+          
           {/* Header Icon */}
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
             <FiBarChart2 className="text-2xl" />
@@ -66,17 +75,17 @@ const Account = () => {
             </h1>
 
             <p className="mt-1 text-sm text-slate-500 sm:text-base">
-              Manage your invoices, credit notes, delivery challans and
-              account settings.
+              Manage your invoices, credit notes, delivery challans,
+              quotations and account settings.
             </p>
           </div>
-
         </div>
       </div>
 
       {/* SUMMARY */}
-      <div className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
 
+        {/* Invoice */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -94,6 +103,7 @@ const Account = () => {
           </div>
         </div>
 
+        {/* Credit Note */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -111,6 +121,7 @@ const Account = () => {
           </div>
         </div>
 
+        {/* Delivery Challan */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
@@ -128,6 +139,7 @@ const Account = () => {
           </div>
         </div>
 
+        {/* Settings */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
@@ -145,6 +157,23 @@ const Account = () => {
           </div>
         </div>
 
+        {/* Converted Quotations */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+              <FiClipboard />
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-slate-500">
+                Module
+              </p>
+              <p className="text-sm font-semibold text-slate-900">
+                Quotations
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* MODULE SECTION */}
@@ -159,8 +188,7 @@ const Account = () => {
       </div>
 
       {/* MODULE CARDS */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
         {accountModules.map((module) => {
           const Icon = module.icon;
 
@@ -171,6 +199,7 @@ const Account = () => {
               onClick={() => navigate(module.path)}
               className="group w-full rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-slate-200/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
+              
               {/* TOP */}
               <div className="flex items-start justify-between">
 
@@ -185,7 +214,6 @@ const Account = () => {
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition-all duration-200 group-hover:bg-blue-50 group-hover:text-blue-600">
                   <FiArrowRight className="transition-transform duration-200 group-hover:translate-x-0.5" />
                 </div>
-
               </div>
 
               {/* CONTENT */}
@@ -201,22 +229,18 @@ const Account = () => {
 
               {/* FOOTER */}
               <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-
                 <span className="text-sm font-semibold text-blue-600">
                   Open {module.title}
                 </span>
 
                 <FiArrowRight className="text-blue-600 transition-transform duration-200 group-hover:translate-x-1" />
-
               </div>
             </button>
           );
         })}
-
       </div>
     </div>
   );
 };
 
 export default Account;
-

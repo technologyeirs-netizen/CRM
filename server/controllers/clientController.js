@@ -75,12 +75,15 @@ exports.getClients = async (req, res) => {
       ];
     }
 
-    const total = await Client.countDocuments(query);
-    const clients = await Client.find(query)
-      .populate('assignedTo', 'name email role region')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    const [total, clients] = await Promise.all([
+      Client.countDocuments(query),
+      Client.find(query)
+        .populate('assignedTo', 'name email role region')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit))
+        .lean(),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -218,20 +221,38 @@ exports.updatePurchaseStatus = async (req, res) => {
 // @access  Private
 exports.getClientStats = async (req, res) => {
   try {
-    const total = await Client.countDocuments({ isDeleted: false });
-    const active = await Client.countDocuments({ isDeleted: false, status: 'active' });
-    const leads = await Client.countDocuments({ isDeleted: false, status: 'lead' });
-    const churned = await Client.countDocuments({ isDeleted: false, status: 'churned' });
+    // Single aggregation instead of 4 sequential countDocuments
+    // calls + a separate find - much faster as clients grow.
+    const [result] = await Client.aggregate([
+      { $match: { isDeleted: false } },
+      {
+        $facet: {
+          stats: [
+            {
+              $group: {
+                _id: null,
+                total: { $sum: 1 },
+                active: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
+                leads: { $sum: { $cond: [{ $eq: ['$status', 'lead'] }, 1, 0] } },
+                churned: { $sum: { $cond: [{ $eq: ['$status', 'churned'] }, 1, 0] } },
+              },
+            },
+          ],
+          recentClients: [
+            { $sort: { createdAt: -1 } },
+            { $limit: 5 },
+            { $project: { firstName: 1, lastName: 1, email: 1, status: 1, createdAt: 1 } },
+          ],
+        },
+      },
+    ]);
 
-    const recentClients = await Client.find({ isDeleted: false })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('firstName lastName email status createdAt');
+    const stats = result?.stats?.[0] || { total: 0, active: 0, leads: 0, churned: 0 };
 
     res.status(200).json({
       success: true,
-      stats: { total, active, leads, churned },
-      recentClients,
+      stats,
+      recentClients: result?.recentClients || [],
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

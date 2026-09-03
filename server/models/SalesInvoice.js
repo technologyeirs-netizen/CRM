@@ -456,6 +456,9 @@ const salesInvoiceSchema = new mongoose.Schema(
 );
 
 
+// Speeds up the invoice list query (sorted by createdAt desc)
+salesInvoiceSchema.index({ createdAt: -1 });
+
 const SalesInvoice = mongoose.model(
   "SalesInvoice",
   salesInvoiceSchema

@@ -326,6 +326,9 @@ timestamps: true,
 }
 );
 
+// Speeds up the credit note list query (sorted by createdAt desc)
+creditNoteSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model(
 "CreditNote",
 creditNoteSchema

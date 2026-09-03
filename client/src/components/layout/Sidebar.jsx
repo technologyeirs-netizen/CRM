@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
@@ -20,15 +21,16 @@ import {
   FiImage,
   FiChevronDown,
   FiChevronRight,
-  FiLayers ,
+  FiLayers,
   FiTruck,
   FiUserCheck,
 } from 'react-icons/fi';
-
 import { useAuth } from '../../context/AuthContext';
 
 const websiteSyncModulesEnabled =
-  String(import.meta.env.VITE_ENABLE_WEBSITE_SYNC_MODULES || 'true').toLowerCase() !== 'false';
+  String(
+    import.meta.env.VITE_ENABLE_WEBSITE_SYNC_MODULES || 'true'
+  ).toLowerCase() !== 'false';
 
 const getNavItems = (role) => {
   if (role === 'employee') {
@@ -44,102 +46,132 @@ const getNavItems = (role) => {
   const isAdmin = role === 'admin';
 
   return [
+    // =========================
+    // DASHBOARD
+    // =========================
     {
       to: '/dashboard',
       label: 'Dashboard',
       icon: FiHome,
     },
 
+    // =========================
+    // SALES TEAM
+    // =========================
     {
-      to: '/clients',
-      label: 'Clients',
+      label: 'Sales Team',
       icon: FiUsers,
+      children: [
+        {
+          to: '/clients',
+          label: 'Total Clients',
+          icon: FiUsers,
+        },
+        {
+          to: '/followups',
+          label: 'Follow-Ups',
+          icon: FiCalendar,
+        },
+        {
+          to: '/interactions',
+          label: 'Interactions',
+          icon: FiMessageSquare,
+        },
+      ],
     },
 
+    // =========================
+    // CUSTOMER DETAILS
+    // =========================
     {
       to: '/customer-details',
       label: 'Customer Details',
       icon: FiUsers,
     },
 
-  {
-  label: 'Account',
-  icon: FiShoppingBag,
-  children: [
+    // =========================
+    // ACCOUNT
+    // =========================
     {
-      to: '/account',
-      label: 'Account Overview',
-      icon: FiGrid,
+      label: 'Account',
+      icon: FiShoppingBag,
+      children: [
+        {
+          to: '/account',
+          label: 'Account Overview',
+          icon: FiGrid,
+        },
+        {
+          to: '/invoice',
+          label: 'Invoice',
+          icon: FiFileText,
+        },
+        {
+          to: '/credit-note',
+          label: 'Credit Note',
+          icon: FiFileText,
+        },
+        {
+          to: '/delivery-challan',
+          label: 'Delivery Challan',
+          icon: FiTruck,
+        },
+        {
+          to: '/sales-settings',
+          label: 'Account Settings',
+          icon: FiPackage,
+        },
+        {
+          to: '/converted-quotations',
+          label: 'Converted Quotations',
+          icon: FiFileText,
+        },
+      ],
     },
-    {
-      to: '/invoice',
-      label: 'Invoice',
-      icon: FiFileText,
-    },
-    {
-      to: '/credit-note',
-      label: 'Credit Note',
-      icon: FiFileText,
-    },
-    {
-      to: '/delivery-challan',
-      label: 'Delivery Challan',
-      icon: FiTruck,
-    },
-    {
-      to: '/sales-settings',
-      label: 'Account Settings',
-      icon: FiPackage,
-    },
-    {
-      to: '/converted-quotations',
-      label: 'Converted Quotations',
-      icon: FiFileText,
-    },
-  ],
-},
 
-    // INVENTORY BELOW SALES
-    // INVENTORY DROPDOWN---------------
-{
-  label: 'Inventory',
-  icon: FiPackage,
-  children: [
+    // =========================
+    // INVENTORY
+    // =========================
     {
-      to: '/inventory/products',
-      label: 'Products',
+      label: 'Inventory',
       icon: FiPackage,
+      children: [
+        {
+          to: '/inventory/products',
+          label: 'Products',
+          icon: FiPackage,
+        },
+        {
+          to: '/inventory/godowns',
+          label: 'Godowns',
+          icon: FiPackage,
+        },
+        {
+          to: '/inventory/categories',
+          label: 'Categories',
+          icon: FiPackage,
+        },
+        {
+          to: '/inventory/subcategories',
+          label: 'Sub Categories',
+          icon: FiLayers,
+        },
+      ],
     },
-    {
-      to: '/inventory/godowns',
-      label: 'Godowns',
-      icon: FiPackage,
-    },
-    {
-      to: '/inventory/categories',
-      label: 'Categories',
-      icon: FiPackage,
-    },
-    {
-      to: '/inventory/subcategories',
-      label: 'Sub Categories',
-      icon: FiLayers, // ya FiPackage
-    },
-  ],
-},
 
+    // =========================
+    // PURCHASE HISTORY
+    // =========================
     {
       to: '/purchase-history',
       label: 'Purchase History',
       icon: FiShoppingBag,
     },
 
-    // {
-    //   to: '/bill-quotation',
-    //   label: 'Bill Quotation',
-    //   icon: FiFileText,
-    // },
-
+    // =========================
+    // SAVED QUOTATIONS
+    // ADMIN ONLY
+    // =========================
     ...(isAdmin
       ? [
           {
@@ -150,30 +182,27 @@ const getNavItems = (role) => {
         ]
       : []),
 
-    {
-      to: '/followups',
-      label: 'Follow-Ups',
-      icon: FiCalendar,
-    },
-
-    {
-      to: '/interactions',
-      label: 'Interactions',
-      icon: FiMessageSquare,
-    },
-
+    // =========================
+    // SERVICE MANAGEMENT
+    // =========================
     {
       to: '/service-management',
       label: 'Service Management',
       icon: FiUserPlus,
     },
 
+    // =========================
+    // EMPLOYEES
+    // =========================
     {
       to: '/employees',
       label: 'Employees',
       icon: FiBriefcase,
     },
 
+    // =========================
+    // FSM
+    // =========================
     {
       label: 'FSM',
       icon: FiUserCheck,
@@ -196,38 +225,71 @@ const getNavItems = (role) => {
       ],
     },
 
+    // =========================
+    // DISTRIBUTION
+    // =========================
     {
       to: '/distribution',
       label: 'Distribution',
       icon: FiPackage,
     },
 
+    // =========================
+    // CAMPAIGNS
+    // =========================
     {
       to: '/campaigns',
       label: 'Campaigns',
       icon: FiTarget,
     },
 
+    // =========================
+    // B2C
+    // =========================
     {
       label: 'B2C (Website + App)',
       icon: FiSmartphone,
       children: [
-        { to: '/b2c', label: 'B2C Overview', icon: FiGrid },
-        { to: '/inventory/products', label: 'Products', icon: FiPackage },
-        { to: '/inventory/categories', label: 'Categories', icon: FiLayers },
+        {
+          to: '/b2c',
+          label: 'B2C Overview',
+          icon: FiGrid,
+        },
+        {
+          to: '/inventory/products',
+          label: 'Products',
+          icon: FiPackage,
+        },
+        {
+          to: '/inventory/categories',
+          label: 'Categories',
+          icon: FiLayers,
+        },
         {
           to: '/inventory/subcategories',
           label: 'Sub Categories',
           icon: FiLayers,
         },
-        { to: '/b2c/orders', label: 'Orders', icon: FiShoppingBag },
-        { to: '/b2c/services', label: 'Services', icon: FiTool },
+        {
+          to: '/b2c/orders',
+          label: 'Orders',
+          icon: FiShoppingBag,
+        },
+        {
+          to: '/b2c/services',
+          label: 'Services',
+          icon: FiTool,
+        },
         {
           to: '/b2c/service-bookings',
           label: 'Service Bookings',
           icon: FiCalendar,
         },
-        { to: '/b2c/reviews', label: 'Reviews', icon: FiStar },
+        {
+          to: '/b2c/reviews',
+          label: 'Reviews',
+          icon: FiStar,
+        },
         {
           to: '/b2c/banners',
           label: 'App Banners / Carousel',
@@ -236,6 +298,9 @@ const getNavItems = (role) => {
       ],
     },
 
+    // =========================
+    // WEBSITE
+    // =========================
     ...(websiteSyncModulesEnabled
       ? [
           {
@@ -277,6 +342,7 @@ const SidebarDropdown = ({ item }) => {
       <button
         className="sidebar-dropdown-btn"
         onClick={() => setOpen(!open)}
+        type="button"
       >
         <div className="sidebar-dropdown-left">
           <item.icon />
@@ -313,18 +379,31 @@ const Sidebar = () => {
 
   return (
     <aside className="sidebar">
+      {/* =========================
+          LOGO
+      ========================= */}
       <div className="sidebar-logo">
         <h2>EIRS CRM</h2>
         <p>Customer Relationship Management</p>
       </div>
 
+      {/* =========================
+          NAVIGATION
+      ========================= */}
       <nav className="sidebar-nav">
-        <div className="sidebar-section-label">Main Menu</div>
+        <div className="sidebar-section-label">
+          Main Menu
+        </div>
 
         {navItems.map((item) => {
-          // DROPDOWN MENU
+          // DROPDOWN
           if (item.children) {
-            return <SidebarDropdown key={item.label} item={item} />;
+            return (
+              <SidebarDropdown
+                key={item.label}
+                item={item}
+              />
+            );
           }
 
           // NORMAL LINK
@@ -345,6 +424,9 @@ const Sidebar = () => {
         })}
       </nav>
 
+      {/* =========================
+          USER FOOTER
+      ========================= */}
       <div className="sidebar-footer">
         <div
           style={{
@@ -383,8 +465,12 @@ const Sidebar = () => {
 
         <button
           className="btn btn-secondary btn-sm"
-          style={{ width: '100%', marginTop: 4 }}
+          style={{
+            width: '100%',
+            marginTop: 4,
+          }}
           onClick={logout}
+          type="button"
         >
           Sign Out
         </button>

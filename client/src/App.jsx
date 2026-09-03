@@ -38,6 +38,7 @@ import Account from "./pages/AccountPage";
 import SalesTeamDashboard from "./pages/SalesTeamDashboard";
 import ServicesTeamDashboard from "./pages/ServiceTeamDashboard";
 import DeliveryTeamDashboard from "./pages/DeliveryTeamDashboard";
+import HRDashboard from "./pages/HRDashboard";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
@@ -154,6 +155,8 @@ function App() {
 <Route path="/sales-team" element={<SalesTeamDashboard />} />
 <Route path="/services-team" element={<ServicesTeamDashboard />} />
 <Route path="/delivery-team" element={<DeliveryTeamDashboard />} />
+
+<Route path="/hr" element={<HRDashboard />} />
 
              <Route path="account" element={<Account />} />
 

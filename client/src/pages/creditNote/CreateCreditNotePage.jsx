@@ -173,17 +173,13 @@ useCallback(async (partyId) => {
   try {
 
     const { data } =
-      await salesInvoiceService.getAll();
-    console.log("ALL INVOICES =>", data.invoices);
-    const filteredInvoices =
-      (data?.invoices || []).filter(
-        (invoice) =>
-          String(invoice.clientId) ===
-          String(partyId)
-      );
+      await salesInvoiceService.getAll({
+        clientId: partyId,
+        limit: 500,
+      });
 
     setSalesInvoices(
-      filteredInvoices
+      data?.invoices || []
     );
 
   } catch (error) {

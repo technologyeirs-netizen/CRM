@@ -7,8 +7,29 @@ const SalesSetting = require("../models/SalesSetting");
 exports.getAllDeliveryChallans = async (req, res) => {
   try {
 
-    const challans = await DeliveryChallan.find()
-      .sort({ createdAt: -1 });
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (req.query.clientId) {
+      filter["party.clientId"] = req.query.clientId;
+    }
+
+    const [challans, total] = await Promise.all([
+      DeliveryChallan.find(filter)
+        // Only fetch fields the list view needs - skips heavy
+        // nested arrays like items/company/bankDetails, which
+        // were making this endpoint slow as records grew.
+        .select(
+          "challanDate fullDeliveryChallanNumber party.name party.clientId totalAmount status createdAt"
+        )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      DeliveryChallan.countDocuments(filter),
+    ]);
 
     const formattedChallans = challans.map((challan) => ({
       _id: challan._id,
@@ -33,7 +54,9 @@ exports.getAllDeliveryChallans = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      total: formattedChallans.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit) || 1,
       deliveryChallans: formattedChallans,
     });
 
