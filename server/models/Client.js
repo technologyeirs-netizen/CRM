@@ -90,6 +90,10 @@ ClientSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
+// Indexes to keep stats/list queries fast as the collection grows
+ClientSchema.index({ isDeleted: 1, status: 1 });
+ClientSchema.index({ isDeleted: 1, createdAt: -1 });
+
 // Auto-calculate total purchase value before save
 ClientSchema.pre('save', function (next) {
   if (this.purchaseHistory && this.purchaseHistory.length > 0) {

@@ -314,6 +314,9 @@ const deliveryChallanSchema = new mongoose.Schema(
   }
 );
 
+// Speeds up the delivery challan list query (sorted by createdAt desc)
+deliveryChallanSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model(
   "DeliveryChallan",
   deliveryChallanSchema

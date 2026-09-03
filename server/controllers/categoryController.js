@@ -1,5 +1,6 @@
 const Category = require('../models/Category');
 
+
 exports.getCategories = async (req, res) => {
   try {
     const { search, page = 1, limit = 100 } = req.query;

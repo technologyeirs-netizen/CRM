@@ -434,8 +434,32 @@ return res.status(201).json({
 // ============================================
 exports.getAllSalesInvoices = async (req, res) => {
 try {
-const invoices = await SalesInvoice.find()
-.sort({ createdAt: -1 });
+// PAGINATION (was previously ignored, causing the whole
+// collection - with full nested items/company/bank data - to
+// be fetched on every call. That's what was making the API
+// slow and triggering the axios timeout on the client.)
+const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+const skip = (page - 1) * limit;
+
+const filter = {};
+if (req.query.clientId) {
+  filter["party.clientId"] = req.query.clientId;
+}
+
+const [invoices, total] = await Promise.all([
+  SalesInvoice.find(filter)
+    // Only fetch the fields the list view actually needs -
+    // skips heavy nested arrays like items/company/bankDetails.
+    .select(
+      "invoiceDate fullInvoiceNumber party.name party.clientId dueDate totalAmount status paymentMode amountReceived balanceAmount createdAt"
+    )
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean(),
+  SalesInvoice.countDocuments(filter),
+]);
 
 const formattedInvoices = invoices.map((invoice) => ({
   _id: invoice._id,
@@ -472,7 +496,9 @@ const formattedInvoices = invoices.map((invoice) => ({
 
 return res.status(200).json({
   success: true,
-  total: formattedInvoices.length,
+  total,
+  page,
+  totalPages: Math.ceil(total / limit) || 1,
   invoices: formattedInvoices,
 });
 

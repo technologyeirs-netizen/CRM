@@ -226,12 +226,36 @@ exports.createFromInvoice = async (req, res) => {
 // ===============================
 exports.getAllCreditNotes = async (req, res) => {
   try {
-    const creditNotes = await CreditNote.find()
-      .sort({ createdAt: -1 });
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (req.query.clientId) {
+      filter["party.clientId"] = req.query.clientId;
+    }
+
+    const [creditNotes, total] = await Promise.all([
+      CreditNote.find(filter)
+        // Only fetch fields the list view needs - skips heavy
+        // nested arrays like items/company snapshots, which
+        // were making this endpoint slow as records grew.
+        .select(
+          "creditNoteDate fullCreditNoteNumber salesInvoiceNumber party.name party.clientId totalAmount status createdAt"
+        )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      CreditNote.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       count: creditNotes.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit) || 1,
       creditNotes,
     });
   } catch (error) {
