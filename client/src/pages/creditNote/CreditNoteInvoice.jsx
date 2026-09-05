@@ -9,7 +9,7 @@ import {
   Settings,
   Grid,
   Edit,
-  
+  History,
   Trash2,
   HelpCircle,
   Download,
@@ -51,7 +51,7 @@ export default function CreditInvoiceNote() {
   try {
     setLoading(true);
 
-    const response = await creditNoteService.getAll();
+    const response = await creditNoteService.getAll({ page, limit });
     console.log("CREDIT NOTES =>", response.data.creditNotes);
 
     console.log(response.data);
@@ -59,6 +59,9 @@ export default function CreditInvoiceNote() {
     setCreditNotes(
       response.data.creditNotes || []
     );
+
+    const total = response?.data?.total || 0;
+    setTotalPages(Math.ceil(total / limit) || 1);
   } catch (error) {
     console.error(error);
   } finally {
@@ -67,7 +70,7 @@ export default function CreditInvoiceNote() {
 };
 useEffect(() => {
   fetchCreditNotes();
-}, []);
+}, [page]);
 
 
   useEffect(() => {
@@ -284,6 +287,15 @@ const handleViewCreditNote = (id) => {
               </div>
             )}
           </div> */}
+
+          {/* History Button */}
+          <button
+            onClick={() => navigate("/history?type=Credit%20Note")}
+            className="flex items-center gap-2 border border-gray-200 bg-white text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50 transition-colors whitespace-nowrap h-[40px]"
+          >
+            <History size={16} />
+            History
+          </button>
 
           {/* Create Button */}
           <button

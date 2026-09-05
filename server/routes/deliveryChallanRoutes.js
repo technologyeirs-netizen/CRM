@@ -9,6 +9,12 @@ const {
   updateDeliveryChallan,
   deleteDeliveryChallan,
 } = require("../controllers/DeliveryChallanController");
+const { protect } = require("../middleware/auth");
+
+// Needed so req.user is populated - the activity/history log
+// records who (which logged-in user) created/edited/deleted
+// each delivery challan.
+router.use(protect);
 
 // ============================================
 // CREATE

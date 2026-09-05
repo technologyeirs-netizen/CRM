@@ -502,6 +502,15 @@ export default function SalesInvoicesDashboard() {
             )}
           </div> */}
 
+          {/* History Button */}
+          <button
+            onClick={() => navigate("/history?type=Invoice")}
+            className="flex items-center gap-2 border border-gray-200 bg-white text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50 transition-colors whitespace-nowrap h-[40px]"
+          >
+            <History size={16} />
+            History
+          </button>
+
           {/* Create Button */}
           <button
             onClick={handleCreateInvoiceRedirect}

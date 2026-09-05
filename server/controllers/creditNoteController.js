@@ -3,6 +3,7 @@
 const CreditNote = require("../models/CreditNote");
 const SalesInvoice = require("../models/SalesInvoice");
 const SalesSetting = require("../models/SalesSetting");
+const { logActivity } = require("../utils/activityLogger");
 
 // ===============================
 // CREATE CREDIT NOTE FROM INVOICE
@@ -187,6 +188,15 @@ exports.createFromInvoice = async (req, res) => {
       }
     );
 
+    logActivity({
+      req,
+      documentType: "Credit Note",
+      documentId: creditNote._id,
+      documentNumber: creditNote.fullCreditNoteNumber,
+      partyName: creditNote.party?.name || "",
+      action: "Create",
+    });
+
     return res.status(201).json({
       success: true,
       message:
@@ -314,6 +324,15 @@ exports.deleteCreditNote = async (req, res) => {
     }
 
     await CreditNote.findByIdAndDelete(id);
+
+    logActivity({
+      req,
+      documentType: "Credit Note",
+      documentId: creditNote._id,
+      documentNumber: creditNote.fullCreditNoteNumber,
+      partyName: creditNote.party?.name || "",
+      action: "Delete",
+    });
 
     return res.status(200).json({
       success: true,

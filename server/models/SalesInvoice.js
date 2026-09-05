@@ -17,7 +17,7 @@ const invoiceItemSchema = new mongoose.Schema(
       default: "",
     },
 
-    hsnCode: {
+    hsnCode: {  
       type: String,
       default: "",
     },
