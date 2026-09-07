@@ -50,6 +50,7 @@ const ProspectsPage = lazy(() => import("./pages/ProspectsPage"));
 const BillQuotationPage = lazy(() => import("./pages/BillQuotationPage"));
 const InventoryPage = lazy(() => import("./pages/InventoryPage"));
 const SavedQuotationsPage = lazy(() => import("./pages/SavedQuotationsPage"));
+const ActivityHistoryPage = lazy(() => import("./pages/ActivityHistoryPage"));
 const CustomerDetailsPage = lazy(() => import("./pages/CustomerDetailsPage"));
 const PurchaseHistoryPage = lazy(() => import("./pages/PurchaseHistoryPage"));
 const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
@@ -188,6 +189,8 @@ function App() {
                 <Route path="/debit-note" element={<DebitNotePage />} />
 
                 <Route path="/credit-note" element={<CreditInvoiceNote />} />
+
+                <Route path="/history" element={<ActivityHistoryPage />} />
 
                 <Route
                   path="credit-note/view/:id"

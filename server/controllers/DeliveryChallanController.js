@@ -1,5 +1,22 @@
 const DeliveryChallan  = require("../models/DeliveryChallan");
 const SalesSetting = require("../models/SalesSetting");
+const { logActivity } = require("../utils/activityLogger");
+
+// Fields whose changes are worth showing in the audit history
+// when a delivery challan is edited.
+const CHALLAN_TRACKED_FIELDS = [
+  "party.name",
+  "fullDeliveryChallanNumber",
+  "challanDate",
+  "notes",
+  "items",
+  "subtotal",
+  "taxableAmount",
+  "totalDiscount",
+  "totalTax",
+  "totalAmount",
+  "status",
+];
 // ============================================
 // GET ALL DELIVERY CHALLANS
 // ============================================
@@ -489,6 +506,15 @@ exports.createDeliveryChallan = async (req, res) => {
 
     }
 
+    logActivity({
+      req,
+      documentType: "Delivery Challan",
+      documentId: deliveryChallan._id,
+      documentNumber: deliveryChallan.fullDeliveryChallanNumber,
+      partyName: deliveryChallan.party?.name || "",
+      action: "Create",
+    });
+
     return res.status(201).json({
 
       success: true,
@@ -777,6 +803,20 @@ exports.updateDeliveryChallan = async (req, res) => {
         }
       );
 
+    if (existing && updated) {
+      logActivity({
+        req,
+        documentType: "Delivery Challan",
+        documentId: updated._id,
+        documentNumber: updated.fullDeliveryChallanNumber,
+        partyName: updated.party?.name || "",
+        action: "Edited",
+        before: existing.toObject(),
+        after: updated.toObject(),
+        trackedFields: CHALLAN_TRACKED_FIELDS,
+      });
+    }
+
     return res.status(200).json({
 
       success: true,
@@ -850,6 +890,15 @@ exports.deleteDeliveryChallan = async (req, res) => {
     await DeliveryChallan.findByIdAndDelete(
       req.params.id
     );
+
+    logActivity({
+      req,
+      documentType: "Delivery Challan",
+      documentId: challan._id,
+      documentNumber: challan.fullDeliveryChallanNumber,
+      partyName: challan.party?.name || "",
+      action: "Delete",
+    });
 
     return res.status(200).json({
 

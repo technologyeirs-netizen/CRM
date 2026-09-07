@@ -1,5 +1,6 @@
 const Quotation = require('../models/Quotation');
 const Client = require('../models/Client');
+const { logActivity } = require('../utils/activityLogger');
 
 // Save a new quotation
 exports.createQuotation = async (req, res) => {
@@ -38,6 +39,16 @@ exports.createQuotation = async (req, res) => {
     });
 
     await quotation.save();
+
+    logActivity({
+      req,
+      documentType: 'Quotation',
+      documentId: quotation._id,
+      documentNumber: quotation.quoteNumber,
+      partyName: quotation.clientName || '',
+      action: 'Create',
+    });
+
     res.status(201).json({ message: 'Quotation saved successfully', quotation });
   } catch (error) {
     console.error('Error saving quotation:', error);
@@ -48,8 +59,9 @@ exports.createQuotation = async (req, res) => {
 // Get all quotations with filters and pagination
 exports.getQuotations = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, clientId, search } = req.query;
-    const skip = (page - 1) * limit;
+    const { page = 1, status, clientId, search } = req.query;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
+    const skip = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limit;
 
     let filter = {};
     if (status) filter.status = status;
@@ -61,19 +73,22 @@ exports.getQuotations = async (req, res) => {
       ];
     }
 
-    const total = await Quotation.countDocuments(filter);
-    const quotations = await Quotation.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit))
-      .populate('clientId', 'firstName lastName phone')
-      .populate('createdBy', 'firstName lastName email');
+    const [total, quotations] = await Promise.all([
+      Quotation.countDocuments(filter),
+      Quotation.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('clientId', 'firstName lastName phone')
+        .populate('createdBy', 'firstName lastName email')
+        .lean(),
+    ]);
 
     res.json({
       quotations,
       totalCount: total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: Number(page),
+      totalPages: Math.ceil(total / limit) || 1,
+      currentPage: Math.max(parseInt(page, 10) || 1, 1),
     });
   } catch (error) {
     console.error('Error fetching quotations:', error);
@@ -106,11 +121,28 @@ exports.updateQuotationStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
+    const oldQuotation = await Quotation.findById(id);
+    if (!oldQuotation) {
+      return res.status(404).json({ message: 'Quotation not found' });
+    }
+
     const quotation = await Quotation.findByIdAndUpdate(id, { status }, { new: true });
 
     if (!quotation) {
       return res.status(404).json({ message: 'Quotation not found' });
     }
+
+    logActivity({
+      req,
+      documentType: 'Quotation',
+      documentId: quotation._id,
+      documentNumber: quotation.quoteNumber,
+      partyName: quotation.clientName || '',
+      action: 'Edited',
+      before: oldQuotation.toObject(),
+      after: quotation.toObject(),
+      trackedFields: ['status'],
+    });
 
     res.json({ message: 'Quotation status updated', quotation });
   } catch (error) {
@@ -128,6 +160,15 @@ exports.deleteQuotation = async (req, res) => {
     if (!quotation) {
       return res.status(404).json({ message: 'Quotation not found' });
     }
+
+    logActivity({
+      req,
+      documentType: 'Quotation',
+      documentId: quotation._id,
+      documentNumber: quotation.quoteNumber,
+      partyName: quotation.clientName || '',
+      action: 'Delete',
+    });
 
     res.json({ message: 'Quotation deleted successfully' });
   } catch (error) {

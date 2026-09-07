@@ -9,6 +9,12 @@ const {
   updateSalesInvoice,
   deleteSalesInvoice,
 } = require("../controllers/salesInvoiceController");
+const { protect } = require("../middleware/auth");
+
+// Needed so req.user is populated - the activity/history log
+// records who (which logged-in user) created/edited/deleted
+// each invoice.
+router.use(protect);
 
 
 // ============================================

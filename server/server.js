@@ -132,6 +132,7 @@ app.use('/api/godowns', require('./routes/godownRoutes'));
 app.use('/api/distribution', require('./routes/distributionRoutes'));
 app.use('/api/campaigns', require('./routes/campaignRoutes'));
 app.use('/api/quotations', require('./routes/quotationRoutes'));
+app.use('/api/activity-logs', require('./routes/activityLogRoutes'));
 app.use('/api/website-sync', require('./routes/websiteSyncRoutes'));
 
 // ── B2C section (App + Website live data — same shared MongoDB) ──────────

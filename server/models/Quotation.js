@@ -37,4 +37,8 @@ const quotationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Latest-first is the default list sort; this keeps that fast as the
+// collection grows (matches the same index on Invoice/CreditNote/DeliveryChallan).
+quotationSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Quotation', quotationSchema);

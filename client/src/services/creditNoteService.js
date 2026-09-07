@@ -12,8 +12,8 @@ export const creditNoteService = {
       payload
     ),
 
-  getAll: () =>
-    api.get("/credit-notes"),
+  getAll: (params) =>
+    api.get("/credit-notes", { params }),
 
   getById: (id) =>
     api.get(`/credit-notes/${id}`),

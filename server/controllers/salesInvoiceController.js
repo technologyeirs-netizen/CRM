@@ -1,6 +1,28 @@
 const SalesInvoice = require("../models/SalesInvoice");
 const SalesSetting = require("../models/SalesSetting");
 const WebsiteProduct = require("../models/Products");
+const { logActivity } = require("../utils/activityLogger");
+
+// Fields whose changes are worth showing in the audit history
+// when an invoice is edited.
+const INVOICE_TRACKED_FIELDS = [
+  "party.name",
+  "fullInvoiceNumber",
+  "invoiceDate",
+  "dueDate",
+  "paymentTerms",
+  "notes",
+  "items",
+  "globalDiscount",
+  "totalDiscount",
+  "totalTax",
+  "subtotal",
+  "totalAmount",
+  "amountReceived",
+  "balanceAmount",
+  "paymentMode",
+  "status",
+];
 
 // ============================================
 // NOTE ON STOCK:
@@ -333,6 +355,15 @@ console.log(
   invoice
 );
 
+logActivity({
+  req,
+  documentType: "Invoice",
+  documentId: invoice._id,
+  documentNumber: invoice.fullInvoiceNumber,
+  partyName: invoice.party?.name || "",
+  action: "Create",
+});
+
 // NOTE: Stock is intentionally NOT deducted here.
 // It is only deducted when this invoice is converted
 // into a Converted Quotation.
@@ -571,6 +602,15 @@ if (!invoice) {
     message: "Invoice Not Found",
   });
 }
+
+logActivity({
+  req,
+  documentType: "Invoice",
+  documentId: invoice._id,
+  documentNumber: invoice.fullInvoiceNumber,
+  partyName: invoice.party?.name || "",
+  action: "Delete",
+});
 
 return res.status(200).json({
   success: true,
@@ -854,6 +894,20 @@ exports.updateSalesInvoice = async (req, res) => {
     // NOTE: Editing an invoice's items does not touch stock.
     // Stock only changes when the invoice is converted into
     // a Converted Quotation.
+
+    if (oldInvoice && invoice) {
+      logActivity({
+        req,
+        documentType: "Invoice",
+        documentId: invoice._id,
+        documentNumber: invoice.fullInvoiceNumber,
+        partyName: invoice.party?.name || "",
+        action: "Edited",
+        before: oldInvoice.toObject(),
+        after: invoice.toObject(),
+        trackedFields: INVOICE_TRACKED_FIELDS,
+      });
+    }
 
     return res.json({
 

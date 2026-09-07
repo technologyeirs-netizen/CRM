@@ -24,6 +24,7 @@ import {
   FiLayers,
   FiTruck,
   FiUserCheck,
+  FiClock,
 } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -83,11 +84,11 @@ const getNavItems = (role) => {
     // =========================
     // CUSTOMER DETAILS
     // =========================
-    {
-      to: '/customer-details',
-      label: 'Customer Details',
-      icon: FiUsers,
-    },
+    // {
+    //   to: '/customer-details',
+    //   label: 'Customer Details',
+    //   icon: FiUsers,
+    // },
 
     // =========================
     // ACCOUNT
@@ -115,6 +116,11 @@ const getNavItems = (role) => {
           to: '/delivery-challan',
           label: 'Delivery Challan',
           icon: FiTruck,
+        },
+        {
+          to: '/history',
+          label: 'History',
+          icon: FiClock,
         },
         {
           to: '/sales-settings',
@@ -174,11 +180,11 @@ const getNavItems = (role) => {
     // =========================
     ...(isAdmin
       ? [
-          {
-            to: '/saved-quotations',
-            label: 'Saved Quotations',
-            icon: FiDownload,
-          },
+          // {
+          //   to: '/saved-quotations',
+          //   label: 'Saved Quotations',
+          //   icon: FiDownload,
+          // },
         ]
       : []),
 

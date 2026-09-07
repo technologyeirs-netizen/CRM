@@ -11,6 +11,7 @@ import {
   MoreVertical,
   FileText,
   Edit,
+  History,
   Trash2,
   HelpCircle,
   Download,
@@ -96,7 +97,7 @@ export default function DeliveryChallanPage() {
         setLoading(true);
 
         const response =
-          await deliveryChallanService.getAll();
+          await deliveryChallanService.getAll({ page, limit });
 
         console.log(
           "DELIVERY CHALLANS =>",
@@ -107,6 +108,12 @@ export default function DeliveryChallanPage() {
           response.data.deliveryChallans ||
             []
         );
+
+        const total =
+          response?.data?.total || 0;
+        setTotalPages(
+          Math.ceil(total / limit) || 1
+        );
       } catch (error) {
         console.error(error);
       } finally {
@@ -116,7 +123,7 @@ export default function DeliveryChallanPage() {
 
   useEffect(() => {
     fetchDeliveryChallans();
-  }, []);
+  }, [page]);
 
   // =========================
   // CLOSE DROPDOWNS
@@ -418,6 +425,14 @@ export default function DeliveryChallanPage() {
             </div>
           )}
         </div> */}
+
+        <button
+          onClick={() => navigate("/history?type=Delivery%20Challan")}
+          className="flex items-center gap-2 border border-gray-200 bg-white text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50 transition-colors whitespace-nowrap h-[40px]"
+        >
+          <History size={16} />
+          History
+        </button>
 
         <button
           onClick={
