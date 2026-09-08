@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiClock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { interactionService } from '../services/interactionService';
 import Spinner from '../components/common/Spinner';
@@ -72,6 +72,9 @@ const InteractionsPage = () => {
         <button className="btn btn-primary" onClick={() => { setEditData(null); setShowForm(true); }}>
           <FiPlus /> Log Interaction
         </button>
+        <Link to="/history?type=Interaction" className="btn btn-secondary" style={{ marginLeft: 8 }}>
+          <FiClock /> History
+        </Link>
       </div>
 
       {/* Stats Row */}

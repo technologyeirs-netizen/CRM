@@ -5,11 +5,13 @@ const mongoose = require("mongoose");
 // ------------------------------------------------
 // Tracks who did what, on which document, and when.
 // Written by controllers whenever an Invoice, Quotation,
-// Credit Note or Delivery Challan is created, edited or
-// deleted. Read-heavy (list view with filters), so it is
-// indexed for the common query patterns: latest-first,
-// filter by document type, filter by document, filter by
-// user, and text search by document number / user.
+// Credit Note, Delivery Challan, FSM Job, Follow Up,
+// Interaction, Client or Prospect (Service Management) is
+// created, edited/assigned or deleted. Read-heavy (list view
+// with filters), so it is indexed for the common query
+// patterns: latest-first, filter by document type, filter by
+// document, filter by user, and text search by document
+// number / user.
 // ============================================
 
 const changeSchema = new mongoose.Schema(
@@ -41,7 +43,17 @@ const activityLogSchema = new mongoose.Schema(
     documentType: {
       type: String,
       required: true,
-      enum: ["Invoice", "Quotation", "Credit Note", "Delivery Challan"],
+      enum: [
+        "Invoice",
+        "Quotation",
+        "Credit Note",
+        "Delivery Challan",
+        "FSM Job",
+        "Follow Up",
+        "Interaction",
+        "Client",
+        "Prospect",
+      ],
       index: true,
     },
 

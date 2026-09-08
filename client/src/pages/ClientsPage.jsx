@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiEye, FiSearch, FiUpload, FiDownload } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiEye, FiSearch, FiUpload, FiDownload, FiClock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { clientService } from '../services/clientService';
 import Spinner from '../components/common/Spinner';
@@ -145,6 +145,9 @@ const ClientsPage = () => {
           <button className="btn btn-primary" onClick={openCreate}>
             <FiPlus /> Add Client
           </button>
+          <Link to="/history?type=Client" className="btn btn-secondary">
+            <FiClock /> History
+          </Link>
         </div>
       </div>
 

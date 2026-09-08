@@ -37,6 +37,48 @@ const FIELD_LABELS = {
   totalTax: "Total Tax",
   subtotal: "Subtotal",
   taxableAmount: "Taxable Amount",
+
+  // ---- FSM Job ----
+  "assignedTo.fullName": "Assigned To (Service Man)",
+  "assignedBy.name": "Assigned By",
+  cancelReason: "Cancel Reason",
+  cancelledBy: "Cancelled By",
+  preferredDate: "Preferred Date",
+  serviceName: "Service Name",
+  servicePrice: "Service Price",
+  customerName: "Customer Name",
+  address: "Address",
+
+  // ---- Follow Up ----
+  title: "Title",
+  description: "Description",
+  label: "Label",
+  priority: "Priority",
+  scheduledDate: "Scheduled Date",
+  scheduledTime: "Scheduled Time",
+  channel: "Channel",
+  outcome: "Outcome",
+  nextFollowUpDate: "Next Follow-up Date",
+  "assignedTo.name": "Assigned To",
+  "scheduledBy.name": "Scheduled By",
+
+  // ---- Interaction ----
+  type: "Type",
+  subject: "Subject",
+  resolution: "Resolution",
+  sentiment: "Sentiment",
+  "resolvedBy.name": "Resolved By",
+
+  // ---- Client / Prospect ----
+  firstName: "First Name",
+  lastName: "Last Name",
+  email: "Email",
+  phone: "Phone",
+  alternatePhone: "Alternate Phone",
+  company: "Company",
+  source: "Source",
+  stage: "Stage",
+  estimatedValue: "Estimated Value",
 };
 
 function getPath(obj, path) {
@@ -120,8 +162,10 @@ function buildDetails(action, documentType, changes) {
  * result from a hot path - it will never throw.
  *
  * @param {object} params
- * @param {object} params.req - the express request (used for req.user / req.ip)
- * @param {"Invoice"|"Quotation"|"Credit Note"|"Delivery Challan"} params.documentType
+ * @param {object} [params.req] - the express request (used for req.user / req.fsmUser / req.ip)
+ * @param {object} [params.actor] - explicit actor override, e.g. { _id, name, email, role }.
+ *   Falls back to req.user (admin/employee panel), then req.fsmUser (FSM technician app).
+ * @param {"Invoice"|"Quotation"|"Credit Note"|"Delivery Challan"|"FSM Job"|"Follow Up"|"Interaction"|"Client"|"Prospect"} params.documentType
  * @param {string} params.documentId
  * @param {string} [params.documentNumber]
  * @param {string} [params.partyName]
@@ -129,9 +173,13 @@ function buildDetails(action, documentType, changes) {
  * @param {object} [params.before] - plain object snapshot before the change (Edited only)
  * @param {object} [params.after] - plain object snapshot after the change (Edited only)
  * @param {string[]} [params.trackedFields] - dot-paths to diff (Edited only)
+ * @param {Array}  [params.changes] - explicit pre-built { field, label, oldValue, newValue }[],
+ *   used instead of diffing `before`/`after` (e.g. "Assigned To: Ramesh → Suresh" on reassignment).
+ * @param {string} [params.details] - explicit one-line summary, overrides the auto-built one.
  */
 async function logActivity({
   req,
+  actor: actorOverride,
   documentType,
   documentId,
   documentNumber = "",
@@ -140,17 +188,32 @@ async function logActivity({
   before,
   after,
   trackedFields = [],
+  changes: changesOverride,
+  details: detailsOverride,
 }) {
   try {
-    const changes =
-      action === "Edited" && before && after
-        ? diffDocuments(before, after, trackedFields)
-        : [];
+    let changes = changesOverride || [];
 
-    // Nothing actually changed - don't clutter the history with no-op saves.
-    if (action === "Edited" && changes.length === 0) return;
+    if (!changesOverride && action === "Edited" && before && after) {
+      changes = diffDocuments(before, after, trackedFields);
+    }
 
-    const actor = (req && req.user) || {};
+    // Nothing actually changed and nothing was forced via an explicit
+    // details/changes override - don't clutter the history with no-op saves.
+    if (action === "Edited" && changes.length === 0 && !detailsOverride) return;
+
+    // Who did it - explicit actor wins, then the logged-in admin/employee
+    // (req.user), then the logged-in FSM technician (req.fsmUser).
+    const fsmActor = req && req.fsmUser
+      ? {
+          _id: req.fsmUser._id,
+          name: req.fsmUser.fullName,
+          email: req.fsmUser.email,
+          role: "fsm",
+        }
+      : null;
+
+    const actor = actorOverride || (req && req.user) || fsmActor || {};
 
     const ipAddress =
       (req &&
@@ -160,7 +223,7 @@ async function logActivity({
     await ActivityLog.create({
       user: {
         id: actor._id || actor.id || null,
-        name: actor.name || "Unknown User",
+        name: actor.name || actor.fullName || "Unknown User",
         email: actor.email || "",
         role: actor.role || (actor.isAdmin ? "admin" : ""),
       },
@@ -169,7 +232,7 @@ async function logActivity({
       documentNumber,
       partyName,
       action,
-      details: buildDetails(action, documentType, changes),
+      details: detailsOverride || buildDetails(action, documentType, changes),
       changes,
       ipAddress,
     });

@@ -180,6 +180,7 @@ const ProspectsPage = () => {
           <Link className="btn btn-secondary" to="/distribution">Distribution</Link>
           <Link className="btn btn-secondary" to="/bill-quotation">Bill Quotation</Link>
           <Link className="btn btn-secondary" to="/purchase-history">Purchase History</Link>
+          <Link className="btn btn-secondary" to="/history?type=Prospect">History</Link>
           {isAdmin && (
             <>
               <input

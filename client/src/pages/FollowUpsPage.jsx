@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiSearch, FiClock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { followUpService } from '../services/followUpService';
 import Spinner from '../components/common/Spinner';
@@ -100,6 +100,9 @@ const FollowUpsPage = () => {
         <button className="btn btn-primary" onClick={() => { setEditData(null); setShowForm(true); }}>
           <FiPlus /> Schedule Follow-Up
         </button>
+        <Link to="/history?type=Follow%20Up" className="btn btn-secondary" style={{ marginLeft: 8 }}>
+          <FiClock /> History
+        </Link>
       </div>
 
       {/* Quick Stats */}

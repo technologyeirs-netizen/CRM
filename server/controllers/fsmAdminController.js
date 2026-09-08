@@ -4,6 +4,7 @@ const FsmJob = require('../models/FsmJob');
 const FsmLeave = require('../models/FsmLeave');
 const cloudinary = require('../config/cloudinary');
 const { getActiveLeaveForFsm, getOnLeaveMapForFsmIds } = require('../utils/fsmLeaveHelper');
+const { logActivity } = require('../utils/activityLogger');
 
 // Website ke leads raw "servicebookings" collection me padi hoti hain
 // (websiteSyncController isi collection ko WebsiteSourceBooking naam se use karta hai).
@@ -216,6 +217,16 @@ exports.assignJob = async (req, res) => {
       status: 'pending',
     });
 
+    logActivity({
+      req,
+      documentType: 'FSM Job',
+      documentId: job._id,
+      documentNumber: job.serviceName || String(job._id),
+      partyName: job.customerName || '',
+      action: 'Create',
+      details: `Job Assigned To ${fsmUser.fullName}`,
+    });
+
     res.status(201).json({
       success: true,
       message: `Lead assigned to ${fsmUser.fullName}. Status: pending`,
@@ -275,7 +286,7 @@ exports.reassignFsmJob = async (req, res) => {
       return res.status(400).json({ success: false, message: 'fsmUserId is required' });
     }
 
-    const job = await FsmJob.findById(req.params.id);
+    const job = await FsmJob.findById(req.params.id).populate('assignedTo', 'fullName');
     if (!job) {
       return res.status(404).json({ success: false, message: 'FSM job not found' });
     }
@@ -300,11 +311,37 @@ exports.reassignFsmJob = async (req, res) => {
       });
     }
 
+    const previousFsmName = job.assignedTo?.fullName || 'Unassigned';
+    const previousStatus = job.status;
+
     job.assignedTo = fsmUser._id;
     job.assignedBy = req.user._id;
     job.status = 'pending';
     job.acceptedAt = null;
     await job.save();
+
+    logActivity({
+      req,
+      documentType: 'FSM Job',
+      documentId: job._id,
+      documentNumber: job.serviceName || String(job._id),
+      partyName: job.customerName || '',
+      action: 'Edited',
+      changes: [
+        {
+          field: 'assignedTo',
+          label: 'Assigned To (Service Man)',
+          oldValue: previousFsmName,
+          newValue: fsmUser.fullName,
+        },
+        {
+          field: 'status',
+          label: 'Status',
+          oldValue: previousStatus,
+          newValue: 'pending',
+        },
+      ],
+    });
 
     res.status(200).json({ success: true, message: `Reassigned to ${fsmUser.fullName}`, data: job });
   } catch (error) {
@@ -325,11 +362,27 @@ exports.cancelFsmJob = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot cancel a completed job' });
     }
 
+    const previousStatus = job.status;
+
     job.status = 'cancelled';
     job.cancelReason = req.body.reason || 'Cancelled by admin';
     job.cancelledBy = 'admin';
     job.cancelledAt = new Date();
     await job.save();
+
+    logActivity({
+      req,
+      documentType: 'FSM Job',
+      documentId: job._id,
+      documentNumber: job.serviceName || String(job._id),
+      partyName: job.customerName || '',
+      action: 'Edited',
+      changes: [
+        { field: 'status', label: 'Status', oldValue: previousStatus, newValue: 'cancelled' },
+        { field: 'cancelReason', label: 'Cancel Reason', oldValue: '—', newValue: job.cancelReason },
+      ],
+      details: `Job Cancelled By Admin: ${job.cancelReason}`,
+    });
 
     res.status(200).json({ success: true, message: 'FSM job cancelled', data: job });
   } catch (error) {

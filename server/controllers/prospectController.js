@@ -1,5 +1,19 @@
 const Prospect = require('../models/Prospect');
 const XLSX = require('xlsx');
+const { logActivity } = require('../utils/activityLogger');
+
+const PROSPECT_TRACKED_FIELDS = [
+  'firstName',
+  'lastName',
+  'email',
+  'phone',
+  'company',
+  'stage',
+  'source',
+  'estimatedValue',
+  'notes',
+  'assignedTo.name',
+];
 
 const VALID_STAGES = ['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
 const VALID_SOURCES = ['referral', 'website', 'social_media', 'cold_call', 'market', 'other'];
@@ -98,6 +112,16 @@ exports.getProspects = async (req, res) => {
 exports.createProspect = async (req, res) => {
   try {
     const prospect = await Prospect.create({ ...req.body });
+
+    logActivity({
+      req,
+      documentType: 'Prospect',
+      documentId: prospect._id,
+      documentNumber: `${prospect.firstName} ${prospect.lastName}`.trim(),
+      partyName: `${prospect.firstName} ${prospect.lastName}`.trim(),
+      action: 'Create',
+    });
+
     res.status(201).json({ success: true, message: 'Prospect created successfully', prospect });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -109,6 +133,9 @@ exports.createProspect = async (req, res) => {
 // @access  Private
 exports.updateProspect = async (req, res) => {
   try {
+    const oldProspect = await Prospect.findOne({ _id: req.params.id, isDeleted: false })
+      .populate('assignedTo', 'name email');
+
     const prospect = await Prospect.findOneAndUpdate(
       { _id: req.params.id, isDeleted: false },
       req.body,
@@ -117,6 +144,20 @@ exports.updateProspect = async (req, res) => {
 
     if (!prospect) {
       return res.status(404).json({ success: false, message: 'Prospect not found' });
+    }
+
+    if (oldProspect) {
+      logActivity({
+        req,
+        documentType: 'Prospect',
+        documentId: prospect._id,
+        documentNumber: `${prospect.firstName} ${prospect.lastName}`.trim(),
+        partyName: `${prospect.firstName} ${prospect.lastName}`.trim(),
+        action: 'Edited',
+        before: oldProspect.toObject(),
+        after: prospect.toObject(),
+        trackedFields: PROSPECT_TRACKED_FIELDS,
+      });
     }
 
     res.status(200).json({ success: true, message: 'Prospect updated successfully', prospect });
@@ -139,6 +180,15 @@ exports.deleteProspect = async (req, res) => {
     if (!prospect) {
       return res.status(404).json({ success: false, message: 'Prospect not found' });
     }
+
+    logActivity({
+      req,
+      documentType: 'Prospect',
+      documentId: prospect._id,
+      documentNumber: `${prospect.firstName} ${prospect.lastName}`.trim(),
+      partyName: `${prospect.firstName} ${prospect.lastName}`.trim(),
+      action: 'Delete',
+    });
 
     res.status(200).json({ success: true, message: 'Prospect deleted successfully' });
   } catch (error) {

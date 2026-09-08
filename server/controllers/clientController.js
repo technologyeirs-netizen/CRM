@@ -1,5 +1,19 @@
 const Client = require('../models/Client');
 const XLSX = require('xlsx');
+const { logActivity } = require('../utils/activityLogger');
+
+const CLIENT_TRACKED_FIELDS = [
+  'firstName',
+  'lastName',
+  'email',
+  'phone',
+  'alternatePhone',
+  'company',
+  'status',
+  'source',
+  'notes',
+  'assignedTo.name',
+];
 
 const VALID_STATUSES = ['active', 'inactive', 'lead', 'prospect', 'churned'];
 const VALID_SOURCES = ['referral', 'website', 'social_media', 'cold_call', 'market', 'other'];
@@ -120,6 +134,16 @@ exports.getClientById = async (req, res) => {
 exports.createClient = async (req, res) => {
   try {
     const client = await Client.create({ ...req.body });
+
+    logActivity({
+      req,
+      documentType: 'Client',
+      documentId: client._id,
+      documentNumber: `${client.firstName} ${client.lastName}`.trim(),
+      partyName: `${client.firstName} ${client.lastName}`.trim(),
+      action: 'Create',
+    });
+
     res.status(201).json({ success: true, message: 'Client created successfully', client });
   } catch (error) {
     if (error.code === 11000) {
@@ -134,6 +158,9 @@ exports.createClient = async (req, res) => {
 // @access  Private
 exports.updateClient = async (req, res) => {
   try {
+    const oldClient = await Client.findOne({ _id: req.params.id, isDeleted: false })
+      .populate('assignedTo', 'name email');
+
     const client = await Client.findOneAndUpdate(
       { _id: req.params.id, isDeleted: false },
       req.body,
@@ -142,6 +169,21 @@ exports.updateClient = async (req, res) => {
     if (!client) {
       return res.status(404).json({ success: false, message: 'Client not found' });
     }
+
+    if (oldClient) {
+      logActivity({
+        req,
+        documentType: 'Client',
+        documentId: client._id,
+        documentNumber: `${client.firstName} ${client.lastName}`.trim(),
+        partyName: `${client.firstName} ${client.lastName}`.trim(),
+        action: 'Edited',
+        before: oldClient.toObject(),
+        after: client.toObject(),
+        trackedFields: CLIENT_TRACKED_FIELDS,
+      });
+    }
+
     res.status(200).json({ success: true, message: 'Client updated successfully', client });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -157,6 +199,16 @@ exports.deleteClient = async (req, res) => {
     if (!client) {
       return res.status(404).json({ success: false, message: 'Client not found' });
     }
+
+    logActivity({
+      req,
+      documentType: 'Client',
+      documentId: client._id,
+      documentNumber: `${client.firstName} ${client.lastName}`.trim(),
+      partyName: `${client.firstName} ${client.lastName}`.trim(),
+      action: 'Delete',
+    });
+
     res.status(200).json({ success: true, message: 'Client deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -174,6 +226,27 @@ exports.addPurchase = async (req, res) => {
     }
     client.purchaseHistory.push(req.body);
     await client.save();
+
+    const addedPurchase = client.purchaseHistory[client.purchaseHistory.length - 1];
+
+    logActivity({
+      req,
+      documentType: 'Client',
+      documentId: client._id,
+      documentNumber: `${client.firstName} ${client.lastName}`.trim(),
+      partyName: `${client.firstName} ${client.lastName}`.trim(),
+      action: 'Edited',
+      details: `Purchase Added: ${addedPurchase?.product || 'Item'} (₹${addedPurchase?.amount ?? 0})`,
+      changes: [
+        {
+          field: 'purchaseHistory',
+          label: 'Purchase History',
+          oldValue: `${client.purchaseHistory.length - 1} item(s)`,
+          newValue: `${client.purchaseHistory.length} item(s)`,
+        },
+      ],
+    });
+
     res.status(201).json({ success: true, message: 'Purchase added', client });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -203,8 +276,28 @@ exports.updatePurchaseStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Purchase not found' });
     }
 
+    const oldStatus = client.purchaseHistory[index].status;
     client.purchaseHistory[index].status = status;
     await client.save();
+
+    if (oldStatus !== status) {
+      logActivity({
+        req,
+        documentType: 'Client',
+        documentId: client._id,
+        documentNumber: `${client.firstName} ${client.lastName}`.trim(),
+        partyName: `${client.firstName} ${client.lastName}`.trim(),
+        action: 'Edited',
+        changes: [
+          {
+            field: 'purchaseHistory.status',
+            label: `Purchase Status (${client.purchaseHistory[index].product || 'Item'})`,
+            oldValue: oldStatus,
+            newValue: status,
+          },
+        ],
+      });
+    }
 
     res.status(200).json({
       success: true,

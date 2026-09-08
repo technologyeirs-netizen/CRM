@@ -1,5 +1,23 @@
 const Interaction = require('../models/Interaction');
 const Client = require('../models/Client');
+const { logActivity } = require('../utils/activityLogger');
+
+const INTERACTION_TRACKED_FIELDS = [
+  'type',
+  'subject',
+  'description',
+  'channel',
+  'status',
+  'priority',
+  'resolution',
+  'sentiment',
+  'resolvedBy.name',
+];
+
+const clientDisplayName = (client) => {
+  if (!client) return '';
+  return [client.firstName, client.lastName].filter(Boolean).join(' ').trim();
+};
 
 // @desc    Get all interactions
 // @route   GET /api/interactions
@@ -82,6 +100,15 @@ exports.createInteraction = async (req, res) => {
       { path: 'loggedBy', select: 'name email' },
     ]);
 
+    logActivity({
+      req,
+      documentType: 'Interaction',
+      documentId: interaction._id,
+      documentNumber: interaction.subject,
+      partyName: clientDisplayName(interaction.client),
+      action: 'Create',
+    });
+
     res.status(201).json({ success: true, message: 'Interaction logged successfully', interaction });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -98,6 +125,10 @@ exports.updateInteraction = async (req, res) => {
       req.body.resolvedBy = req.user.id;
     }
 
+    const oldInteraction = await Interaction.findOne({ _id: req.params.id, isDeleted: false })
+      .populate('resolvedBy', 'name email')
+      .populate('client', 'firstName lastName');
+
     const interaction = await Interaction.findOneAndUpdate(
       { _id: req.params.id, isDeleted: false },
       req.body,
@@ -109,6 +140,20 @@ exports.updateInteraction = async (req, res) => {
 
     if (!interaction) {
       return res.status(404).json({ success: false, message: 'Interaction not found' });
+    }
+
+    if (oldInteraction) {
+      logActivity({
+        req,
+        documentType: 'Interaction',
+        documentId: interaction._id,
+        documentNumber: interaction.subject,
+        partyName: clientDisplayName(interaction.client),
+        action: 'Edited',
+        before: oldInteraction.toObject(),
+        after: interaction.toObject(),
+        trackedFields: INTERACTION_TRACKED_FIELDS,
+      });
     }
 
     res.status(200).json({ success: true, message: 'Interaction updated successfully', interaction });
@@ -126,10 +171,20 @@ exports.deleteInteraction = async (req, res) => {
       { _id: req.params.id, isDeleted: false },
       { isDeleted: true },
       { new: true }
-    );
+    ).populate('client', 'firstName lastName');
     if (!interaction) {
       return res.status(404).json({ success: false, message: 'Interaction not found' });
     }
+
+    logActivity({
+      req,
+      documentType: 'Interaction',
+      documentId: interaction._id,
+      documentNumber: interaction.subject,
+      partyName: clientDisplayName(interaction.client),
+      action: 'Delete',
+    });
+
     res.status(200).json({ success: true, message: 'Interaction deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
