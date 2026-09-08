@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   FiBriefcase,
   FiClock,
@@ -184,6 +185,9 @@ const FsmJobsPage = () => {
         <button className="btn btn-secondary" onClick={loadData}>
           <FiRefreshCw /> Refresh
         </button>
+        <Link to="/history?type=FSM%20Job" className="btn btn-secondary" style={{ marginLeft: 8 }}>
+          <FiClock /> History
+        </Link>
       </div>
 
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>

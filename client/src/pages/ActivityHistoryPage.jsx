@@ -23,6 +23,11 @@ const DOCUMENT_TYPES = [
   "Quotation",
   "Credit Note",
   "Delivery Challan",
+  "FSM Job",
+  "Follow Up",
+  "Interaction",
+  "Client",
+  "Prospect",
 ];
 
 const ACTIONS = ["Create", "Edited", "Delete"];
@@ -44,6 +49,11 @@ const TYPE_STYLES = {
   Quotation: "bg-sky-50 text-sky-700 border border-sky-200",
   "Credit Note": "bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200",
   "Delivery Challan": "bg-orange-50 text-orange-700 border border-orange-200",
+  "FSM Job": "bg-teal-50 text-teal-700 border border-teal-200",
+  "Follow Up": "bg-violet-50 text-violet-700 border border-violet-200",
+  Interaction: "bg-cyan-50 text-cyan-700 border border-cyan-200",
+  Client: "bg-blue-50 text-blue-700 border border-blue-200",
+  Prospect: "bg-lime-50 text-lime-700 border border-lime-200",
 };
 
 function formatDateTime(value) {

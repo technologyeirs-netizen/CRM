@@ -1,6 +1,7 @@
 const FsmJob = require('../models/FsmJob');
 const cloudinary = require('../config/cloudinary');
 const { generateAndSendOtpToEmail, verifyEmailOtp } = require('../services/otpService');
+const { logActivity } = require('../utils/activityLogger');
 
 const findMyJob = async (req) => {
   return FsmJob.findOne({ _id: req.params.id, assignedTo: req.fsmUser._id });
@@ -53,6 +54,16 @@ exports.acceptJob = async (req, res) => {
     job.status = 'accepted';
     job.acceptedAt = new Date();
     await job.save();
+
+    logActivity({
+      req,
+      documentType: 'FSM Job',
+      documentId: job._id,
+      documentNumber: job.serviceName || String(job._id),
+      partyName: job.customerName || '',
+      action: 'Edited',
+      changes: [{ field: 'status', label: 'Status', oldValue: 'pending', newValue: 'accepted' }],
+    });
 
     res.status(200).json({ success: true, message: 'Job accepted', data: job });
   } catch (error) {
@@ -111,6 +122,17 @@ exports.verifyStartOtp = async (req, res) => {
     job.status = 'in_progress';
     job.startedAt = new Date();
     await job.save();
+
+    logActivity({
+      req,
+      documentType: 'FSM Job',
+      documentId: job._id,
+      documentNumber: job.serviceName || String(job._id),
+      partyName: job.customerName || '',
+      action: 'Edited',
+      changes: [{ field: 'status', label: 'Status', oldValue: 'accepted', newValue: 'in_progress' }],
+      details: 'Service Started (Start OTP Verified)',
+    });
 
     res.status(200).json({ success: true, message: 'Service started. Upload a before-work photo.', data: job });
   } catch (error) {
@@ -235,6 +257,17 @@ exports.verifyCompleteOtp = async (req, res) => {
     job.completedAt = new Date();
     await job.save();
 
+    logActivity({
+      req,
+      documentType: 'FSM Job',
+      documentId: job._id,
+      documentNumber: job.serviceName || String(job._id),
+      partyName: job.customerName || '',
+      action: 'Edited',
+      changes: [{ field: 'status', label: 'Status', oldValue: 'in_progress', newValue: 'completed' }],
+      details: 'Job Completed (Complete OTP Verified)',
+    });
+
     res.status(200).json({ success: true, message: 'Job marked as completed', data: job });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -266,11 +299,27 @@ exports.cancelMyJob = async (req, res) => {
       });
     }
 
+    const previousStatus = job.status;
+
     job.status = 'cancelled';
     job.cancelReason = String(reason).trim();
     job.cancelledBy = 'fsm';
     job.cancelledAt = new Date();
     await job.save();
+
+    logActivity({
+      req,
+      documentType: 'FSM Job',
+      documentId: job._id,
+      documentNumber: job.serviceName || String(job._id),
+      partyName: job.customerName || '',
+      action: 'Edited',
+      changes: [
+        { field: 'status', label: 'Status', oldValue: previousStatus, newValue: 'cancelled' },
+        { field: 'cancelReason', label: 'Cancel Reason', oldValue: '—', newValue: job.cancelReason },
+      ],
+      details: `Job Cancelled By Service Man: ${job.cancelReason}`,
+    });
 
     res.status(200).json({
       success: true,

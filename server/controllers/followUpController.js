@@ -1,5 +1,25 @@
 const FollowUp = require('../models/FollowUp');
 const Client = require('../models/Client');
+const { logActivity } = require('../utils/activityLogger');
+
+const FOLLOW_UP_TRACKED_FIELDS = [
+  'title',
+  'description',
+  'label',
+  'priority',
+  'status',
+  'scheduledDate',
+  'scheduledTime',
+  'channel',
+  'outcome',
+  'nextFollowUpDate',
+  'assignedTo.name',
+];
+
+const clientDisplayName = (client) => {
+  if (!client) return '';
+  return [client.firstName, client.lastName].filter(Boolean).join(' ').trim();
+};
 
 // @desc    Get all follow-ups
 // @route   GET /api/followups
@@ -81,6 +101,15 @@ exports.createFollowUp = async (req, res) => {
       { path: 'scheduledBy', select: 'name email' },
     ]);
 
+    logActivity({
+      req,
+      documentType: 'Follow Up',
+      documentId: followUp._id,
+      documentNumber: followUp.title,
+      partyName: clientDisplayName(followUp.client),
+      action: 'Create',
+    });
+
     res.status(201).json({ success: true, message: 'Follow-up scheduled successfully', followUp });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -96,6 +125,10 @@ exports.updateFollowUp = async (req, res) => {
       req.body.completedAt = new Date();
     }
 
+    const oldFollowUp = await FollowUp.findOne({ _id: req.params.id, isDeleted: false })
+      .populate('assignedTo', 'name email')
+      .populate('client', 'firstName lastName');
+
     const followUp = await FollowUp.findOneAndUpdate(
       { _id: req.params.id, isDeleted: false },
       req.body,
@@ -107,6 +140,20 @@ exports.updateFollowUp = async (req, res) => {
 
     if (!followUp) {
       return res.status(404).json({ success: false, message: 'Follow-up not found' });
+    }
+
+    if (oldFollowUp) {
+      logActivity({
+        req,
+        documentType: 'Follow Up',
+        documentId: followUp._id,
+        documentNumber: followUp.title,
+        partyName: clientDisplayName(followUp.client),
+        action: 'Edited',
+        before: oldFollowUp.toObject(),
+        after: followUp.toObject(),
+        trackedFields: FOLLOW_UP_TRACKED_FIELDS,
+      });
     }
 
     res.status(200).json({ success: true, message: 'Follow-up updated successfully', followUp });
@@ -124,10 +171,20 @@ exports.deleteFollowUp = async (req, res) => {
       { _id: req.params.id, isDeleted: false },
       { isDeleted: true },
       { new: true }
-    );
+    ).populate('client', 'firstName lastName');
     if (!followUp) {
       return res.status(404).json({ success: false, message: 'Follow-up not found' });
     }
+
+    logActivity({
+      req,
+      documentType: 'Follow Up',
+      documentId: followUp._id,
+      documentNumber: followUp.title,
+      partyName: clientDisplayName(followUp.client),
+      action: 'Delete',
+    });
+
     res.status(200).json({ success: true, message: 'Follow-up deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
