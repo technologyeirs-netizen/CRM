@@ -4,6 +4,7 @@ import React, {
 } from "react";
 import CreditNotePreferenceSection from "../components/salesSetting/CreditNotePreferenceSection";
 import DeliveryChallanPreferenceSection from "../components/salesSetting/DeliveryChallanPreferenceSection";
+import QuotationPreferenceSection from "../components/salesSetting/QuotationPreferenceSection";
 import InvoicePreferenceSection from "../components/salesSetting/InvoicePreferenceSection";
 import { salesSettingService } from "../services/salesSettingService";
 import { toast } from "react-hot-toast";
@@ -106,6 +107,16 @@ export default function SalesSettingPage() {
 
       },
 
+      quotationPreferences: {
+
+        quotationPrefix: "ET/QT/",
+
+        financialYear: "",
+
+        currentQuotationNumber: 1,
+
+      },
+
       termsAndConditions: {
         salesInvoice: "",
 
@@ -171,7 +182,11 @@ export default function SalesSettingPage() {
           ...prev.deliveryChallanPreferences,
           ...(res.data.setting.deliveryChallanPreferences || {}),
         },
-        
+        quotationPreferences: {
+          ...prev.quotationPreferences,
+          ...(res.data.setting.quotationPreferences || {}),
+        },
+
       }));
     }
   } catch (err) {
@@ -254,6 +269,10 @@ export default function SalesSettingPage() {
             setSettings={setSettings}
           />
           <DeliveryChallanPreferenceSection
+              settings={settings}
+              setSettings={setSettings}
+          />
+          <QuotationPreferenceSection
               settings={settings}
               setSettings={setSettings}
           />

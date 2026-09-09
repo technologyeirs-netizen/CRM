@@ -23,6 +23,9 @@ import DebitNotePage from "./pages/sales/DebitNote";
 import CreditInvoiceNote from "./pages/creditNote/CreditNoteInvoice";
 import ConvertedQuotationsPage from "./pages/convertedQuotation/ConvertedQuotationsPage";
 import ViewConvertedQuotationPage from "./pages/convertedQuotation/ViewConvertedQuotationPage";
+import SalesQuotationsPage from "./pages/salesQuotation/SalesQuotationsPage";
+import CreateSalesQuotationPage from "./pages/salesQuotation/CreateSalesQuotationPage";
+import ViewSalesQuotationPage from "./pages/salesQuotation/ViewSalesQuotationPage";
 import CategoryPage from "./pages/inventory/CategoryPage";
 import GodownsPage from "./pages/inventory/GodownsPage";
 import ProductPage from "./pages/inventory/Product";
@@ -184,6 +187,21 @@ function App() {
                 <Route
                   path="/converted-quotations/view/:id"
                   element={<ViewConvertedQuotationPage />}
+                />
+
+                <Route
+                  path="/sales-quotations"
+                  element={<SalesQuotationsPage />}
+                />
+
+                <Route
+                  path="/sales-quotations/create"
+                  element={<CreateSalesQuotationPage />}
+                />
+
+                <Route
+                  path="/sales-quotations/view/:id"
+                  element={<ViewSalesQuotationPage />}
                 />
 
                 <Route path="/debit-note" element={<DebitNotePage />} />

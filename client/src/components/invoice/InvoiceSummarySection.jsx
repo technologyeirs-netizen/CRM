@@ -38,6 +38,14 @@ export default function InvoiceSummarySection({
   setAmountReceived,
   paymentMode,
   setPaymentMode,
+
+  // When true (e.g. for a Sales Quotation, which is not yet a
+  // sale), the "mark as fully paid" / amount received / balance
+  // fields are hidden since they don't apply yet.
+  hidePayment = false,
+
+  // When true, hides the TCS block (a quotation doesn't collect TCS).
+  hideTCS = false,
 }) {
   return (
 <div className="lg:col-span-6 bg-white border border-gray-200 rounded-md p-4 shadow-sm space-y-4">
@@ -117,6 +125,7 @@ onChange={(e) => setGlobalDiscount(Number(e.target.value))}
             </div>
 
             {/* TCS Checkbox */}
+            {!hideTCS && (
             <div className="border border-gray-200 rounded-xl p-3 bg-gray-50 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
@@ -173,6 +182,7 @@ onChange={(e) => setGlobalDiscount(Number(e.target.value))}
   </div>
 )}
             </div>
+            )}
 
             <hr className="border-gray-100" />
 
@@ -208,62 +218,66 @@ onChange={(e) => setGlobalDiscount(Number(e.target.value))}
               />
             </div>
 
-            <div className="flex justify-end">
-              <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer">
-                <span>Mark as fully paid</span>
-               <input
-  type="checkbox"
-  checked={markAsPaid}
-  onChange={(e) => {
-    const checked = e.target.checked;
+            {!hidePayment && (
+              <>
+                <div className="flex justify-end">
+                  <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer">
+                    <span>Mark as fully paid</span>
+                   <input
+      type="checkbox"
+      checked={markAsPaid}
+      onChange={(e) => {
+        const checked = e.target.checked;
 
-    setMarkAsPaid(checked);
+        setMarkAsPaid(checked);
 
-    if (checked) {
-      setAmountReceived(totalAmount);
-    } else {
-      setAmountReceived(0);
-    }
-  }}
-  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
-/>
-              </label>
-            </div>
+        if (checked) {
+          setAmountReceived(totalAmount);
+        } else {
+          setAmountReceived(0);
+        }
+      }}
+      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+    />
+                  </label>
+                </div>
 
-            {/* Amount Received Entry row wrapper */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500 font-medium">
-                Amount Received
-              </span>
-              <div className="flex items-center border border-gray-300 rounded overflow-hidden w-64 bg-gray-50">
-                <span className="px-2.5 text-gray-400 text-xs">₹</span>
-                <input
-                  type="number"
-                  value={amountReceived}
-                  onChange={(e) => setAmountReceived(Number(e.target.value))}
-                  className="w-full px-2 py-1.5 text-sm bg-white outline-none font-semibold text-gray-800 text-right"
-                />
-                <select
-                  value={paymentMode}
-                  onChange={(e) => setPaymentMode(e.target.value)}
-                  className="bg-gray-50 border-l px-2 py-1.5 text-xs outline-none text-gray-600 font-medium"
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="Cheque">Cheque</option>
-                  <option value="UPI">UPI</option>
-                </select>
-              </div>
-            </div>
+                {/* Amount Received Entry row wrapper */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500 font-medium">
+                    Amount Received
+                  </span>
+                  <div className="flex items-center border border-gray-300 rounded overflow-hidden w-64 bg-gray-50">
+                    <span className="px-2.5 text-gray-400 text-xs">₹</span>
+                    <input
+                      type="number"
+                      value={amountReceived}
+                      onChange={(e) => setAmountReceived(Number(e.target.value))}
+                      className="w-full px-2 py-1.5 text-sm bg-white outline-none font-semibold text-gray-800 text-right"
+                    />
+                    <select
+                      value={paymentMode}
+                      onChange={(e) => setPaymentMode(e.target.value)}
+                      className="bg-gray-50 border-l px-2 py-1.5 text-xs outline-none text-gray-600 font-medium"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Cheque">Cheque</option>
+                      <option value="UPI">UPI</option>
+                    </select>
+                  </div>
+                </div>
 
-            {/* Dynamic Balance Amount */}
-            <div className="flex justify-between items-center pt-2 border-t border-gray-100 text-xs">
-              <span className="text-green-600 font-semibold">
-                Balance Amount
-              </span>
-              <span className="text-green-600 font-bold text-sm font-mono">
-                ₹ {balanceAmount}
-              </span>
-            </div>
+                {/* Dynamic Balance Amount */}
+                <div className="flex justify-between items-center pt-2 border-t border-gray-100 text-xs">
+                  <span className="text-green-600 font-semibold">
+                    Balance Amount
+                  </span>
+                  <span className="text-green-600 font-bold text-sm font-mono">
+                    ₹ {balanceAmount}
+                  </span>
+                </div>
+              </>
+            )}
 
             {/* Authorized Signatory signature canvas */}
             <div className="pt-6 flex flex-col items-end justify-center text-center">

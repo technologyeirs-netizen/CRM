@@ -55,6 +55,10 @@ exports.updateSalesSetting = async (req, res) => {
           ...setting.deliveryChallanPreferences?.toObject?.(),
           ...req.body.deliveryChallanPreferences,
         },
+        quotationPreferences: {
+          ...setting.quotationPreferences?.toObject?.(),
+          ...req.body.quotationPreferences,
+        },
       });
     }
 

@@ -7,6 +7,9 @@ export default function InvoiceHeader({
   handleBackRedirect,
   handleSaveInvoice,
   title,
+  subtitle,
+  saveLabel,
+  updateLabel,
 }) {
   const navigate = useNavigate();
 
@@ -37,7 +40,7 @@ export default function InvoiceHeader({
 
             <p className="text-sm text-slate-500">
 
-              Create and manage customer invoices
+              {subtitle || "Create and manage customer invoices"}
 
             </p>
 
@@ -70,8 +73,8 @@ export default function InvoiceHeader({
           >
 
             {isEditMode
-              ? "Update Invoice"
-              : "Save Invoice"}
+              ? (updateLabel || "Update Invoice")
+              : (saveLabel || "Save Invoice")}
 
           </button>
 
