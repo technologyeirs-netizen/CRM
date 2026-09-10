@@ -128,10 +128,15 @@ const getNavItems = (role) => {
           icon: FiPackage,
         },
         {
-          to: '/converted-quotations',
-          label: 'Converted Quotations',
+          to: '/sales-quotations',
+          label: 'Sales Quotation',
           icon: FiFileText,
         },
+        // {
+        //   to: '/converted-quotations',
+        //   label: 'Converted Quotations',
+        //   icon: FiFileText,
+        // },
       ],
     },
 

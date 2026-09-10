@@ -2,6 +2,7 @@ const SalesInvoice = require("../models/SalesInvoice");
 const SalesSetting = require("../models/SalesSetting");
 const WebsiteProduct = require("../models/Products");
 const { logActivity } = require("../utils/activityLogger");
+const { adjustProductStock } = require("../utils/stockHelper");
 
 // Fields whose changes are worth showing in the audit history
 // when an invoice is edited.
@@ -26,12 +27,17 @@ const INVOICE_TRACKED_FIELDS = [
 
 // ============================================
 // NOTE ON STOCK:
-// Sales Invoices no longer touch product stock at all.
-// Adding items to an invoice (create/edit) does NOT reduce
-// product quantity. Stock is only deducted when an invoice
-// is converted into a "Converted Quotation" (see
-// convertedQuotationController.js), which is when the sale
-// is treated as actually fulfilled from inventory.
+// Creating a Sales Invoice directly (Create Sales Invoice) is the
+// moment a sale is treated as fulfilled from inventory, so it
+// deducts item quantity from stock immediately. Deleting an
+// invoice restores that stock.
+//
+// A Sales Quotation (see salesQuotationController.js) never
+// touches stock - stock only moves once a quotation is converted
+// into an invoice, which internally creates the SalesInvoice
+// record and deducts stock itself (it does not call the
+// createSalesInvoice controller below, so stock is only ever
+// deducted once per sale).
 // ============================================
 
 // ============================================
@@ -364,9 +370,12 @@ logActivity({
   action: "Create",
 });
 
-// NOTE: Stock is intentionally NOT deducted here.
-// It is only deducted when this invoice is converted
-// into a Converted Quotation.
+// =========================
+// DEDUCT STOCK
+// Creating a Sales Invoice directly is a real sale, so the
+// item quantity is deducted from stock right away.
+// =========================
+await adjustProductStock(formattedItems, -1);
 
 const currentNumber = Number(
   preferences.currentInvoiceNumber || 1
@@ -590,9 +599,6 @@ if (!existingInvoice) {
   });
 }
 
-// NOTE: Invoices no longer deduct stock, so deleting one
-// does not need to restore any stock either.
-
 const invoice = await SalesInvoice.findByIdAndDelete(
 req.params.id
 );
@@ -602,6 +608,13 @@ if (!invoice) {
     message: "Invoice Not Found",
   });
 }
+
+// =========================
+// RESTORE STOCK
+// Creating this invoice deducted stock, so deleting it
+// must give that quantity back.
+// =========================
+await adjustProductStock(invoice.items, 1);
 
 logActivity({
   req,
@@ -891,9 +904,19 @@ exports.updateSalesInvoice = async (req, res) => {
 
       );
 
-    // NOTE: Editing an invoice's items does not touch stock.
-    // Stock only changes when the invoice is converted into
-    // a Converted Quotation.
+    // =========================
+    // ADJUST STOCK FOR THE EDIT
+    // Give back whatever the old item quantities had deducted,
+    // then deduct the new item quantities. Net effect: stock
+    // always reflects only the current (latest) items on this
+    // invoice, never double-counted.
+    // =========================
+    if (oldInvoice) {
+      await adjustProductStock(oldInvoice.items, 1);
+    }
+    if (invoice) {
+      await adjustProductStock(invoice.items, -1);
+    }
 
     if (oldInvoice && invoice) {
       logActivity({

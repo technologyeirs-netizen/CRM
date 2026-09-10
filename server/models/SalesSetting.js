@@ -253,12 +253,37 @@ const salesSettingSchema = new mongoose.Schema(
     },
     // =====================================
     // CONVERTED QUOTATION (invoice -> quotation) PREFERENCES
+    // (legacy - kept only so old data/settings keep working)
     // =====================================
     convertedQuotationPreferences: {
 
       quotationPrefix: {
         type: String,
         default: "ET/CQ/",
+      },
+
+      financialYear: {
+        type: String,
+        default: "",
+      },
+
+      currentQuotationNumber: {
+        type: Number,
+        default: 1,
+      },
+
+    },
+
+    // =====================================
+    // SALES QUOTATION PREFERENCES
+    // (used when directly creating a Sales Quotation,
+    // same pattern as creditNotePreferences / deliveryChallanPreferences)
+    // =====================================
+    quotationPreferences: {
+
+      quotationPrefix: {
+        type: String,
+        default: "ET/QT/",
       },
 
       financialYear: {
