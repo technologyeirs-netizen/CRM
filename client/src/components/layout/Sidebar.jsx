@@ -12,7 +12,6 @@ import {
   FiTarget,
   FiFileText,
   FiShoppingBag,
-  FiDownload,
   FiMail,
   FiSmartphone,
   FiGrid,
@@ -25,324 +24,189 @@ import {
   FiTruck,
   FiUserCheck,
   FiClock,
+  FiShield,
 } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import { canAccessModule, isSuperAdminRole } from '../../config/roles';
 
 const websiteSyncModulesEnabled =
   String(
     import.meta.env.VITE_ENABLE_WEBSITE_SYNC_MODULES || 'true'
   ).toLowerCase() !== 'false';
 
+// =========================================================================
+// SIDEBAR MODULES — each block is tagged with a `moduleKey`. A role only
+// sees a block if `canAccessModule(role, moduleKey)` returns true (Super
+// Admin always sees everything). This is the single place that defines
+// "which team sees which modules" — see client/src/config/roles.js for the
+// role → moduleKey mapping.
+// =========================================================================
+const MODULE_BLOCKS = [
+  {
+    moduleKey: 'sales-team',
+    label: 'Sales Team',
+    icon: FiUsers,
+    children: [
+      { to: '/sales-team', label: 'Sales Dashboard', icon: FiHome },
+      { to: '/clients', label: 'Total Clients', icon: FiUsers },
+      { to: '/followups', label: 'Follow-Ups', icon: FiCalendar },
+      { to: '/interactions', label: 'Interactions', icon: FiMessageSquare },
+    ],
+  },
+  {
+    moduleKey: 'account',
+    label: 'Account',
+    icon: FiShoppingBag,
+    children: [
+      { to: '/account', label: 'Account Overview', icon: FiGrid },
+      { to: '/invoice', label: 'Invoice', icon: FiFileText },
+      { to: '/credit-note', label: 'Credit Note', icon: FiFileText },
+      { to: '/delivery-challan', label: 'Delivery Challan', icon: FiTruck },
+      { to: '/history', label: 'History', icon: FiClock },
+      { to: '/sales-settings', label: 'Account Settings', icon: FiPackage },
+      { to: '/sales-quotations', label: 'Sales Quotation', icon: FiFileText },
+    ],
+  },
+  {
+    moduleKey: 'inventory',
+    label: 'Inventory',
+    icon: FiPackage,
+    children: [
+      { to: '/inventory/products', label: 'Products', icon: FiPackage },
+      { to: '/inventory/godowns', label: 'Godowns', icon: FiPackage },
+      { to: '/inventory/categories', label: 'Categories', icon: FiPackage },
+      { to: '/inventory/subcategories', label: 'Sub Categories', icon: FiLayers },
+    ],
+  },
+  {
+    moduleKey: 'purchase-history',
+    label: 'Purchase History',
+    icon: FiShoppingBag,
+    to: '/purchase-history',
+  },
+  {
+    moduleKey: 'service',
+    label: 'Service Management',
+    icon: FiUserPlus,
+    children: [
+      { to: '/services-team', label: 'Service Dashboard', icon: FiHome },
+      { to: '/service-management', label: 'Service Requests', icon: FiUserPlus },
+    ],
+  },
+  {
+    moduleKey: 'delivery-team',
+    label: 'Delivery Team',
+    icon: FiTruck,
+    children: [
+      { to: '/delivery-team', label: 'Delivery Dashboard', icon: FiHome },
+      { to: '/delivery-challan', label: 'Delivery Challan', icon: FiTruck },
+    ],
+  },
+  {
+    moduleKey: 'distribution',
+    label: 'Distribution',
+    icon: FiPackage,
+    to: '/distribution',
+  },
+  {
+    moduleKey: 'hr',
+    label: 'HR',
+    icon: FiUserCheck,
+    children: [
+      { to: '/hr', label: 'HR Dashboard', icon: FiHome },
+    ],
+  },
+  {
+    moduleKey: 'employees',
+    label: 'Employees',
+    icon: FiBriefcase,
+    to: '/employees',
+  },
+  {
+    moduleKey: 'fsm',
+    label: 'FSM',
+    icon: FiUserCheck,
+    children: [
+      { to: '/fsm-requests', label: 'Technician Requests', icon: FiUserCheck },
+      { to: '/fsm-jobs', label: 'Job Requests', icon: FiBriefcase },
+      { to: '/fsm-leaves', label: 'Leave Requests', icon: FiCalendar },
+    ],
+  },
+  {
+    moduleKey: 'campaigns',
+    label: 'Campaigns',
+    icon: FiTarget,
+    to: '/campaigns',
+  },
+  {
+    moduleKey: 'b2c',
+    label: 'B2C (Website + App)',
+    icon: FiSmartphone,
+    children: [
+      { to: '/b2c', label: 'B2C Overview', icon: FiGrid },
+      { to: '/inventory/products', label: 'Products', icon: FiPackage },
+      { to: '/inventory/categories', label: 'Categories', icon: FiLayers },
+      { to: '/inventory/subcategories', label: 'Sub Categories', icon: FiLayers },
+      { to: '/b2c/orders', label: 'Orders', icon: FiShoppingBag },
+      { to: '/b2c/services', label: 'Services', icon: FiTool },
+      { to: '/b2c/service-bookings', label: 'Service Bookings', icon: FiCalendar },
+      { to: '/b2c/reviews', label: 'Reviews', icon: FiStar },
+      { to: '/b2c/banners', label: 'App Banners / Carousel', icon: FiImage },
+    ],
+  },
+  ...(websiteSyncModulesEnabled
+    ? [
+        {
+          moduleKey: 'website',
+          label: 'Website',
+          icon: FiUsers,
+          children: [
+            { to: '/website-users', label: 'Website Users', icon: FiUsers },
+            { to: '/website-orders', label: 'Website Orders', icon: FiShoppingBag },
+            { to: '/website-bookings', label: 'Website Bookings', icon: FiCalendar },
+            { to: '/website-contacts', label: 'Website Contacts', icon: FiMail },
+          ],
+        },
+      ]
+    : []),
+  {
+    moduleKey: 'team',
+    label: 'Team Access',
+    icon: FiShield,
+    to: '/team-users',
+  },
+];
+
 const getNavItems = (role) => {
   if (role === 'employee') {
     return [
-      {
-        to: '/employee-dashboard',
-        label: 'My Dashboard',
-        icon: FiHome,
-      },
+      { to: '/employee-dashboard', label: 'My Dashboard', icon: FiHome },
     ];
   }
 
-  const isAdmin = role === 'admin';
+  const items = [];
 
-  return [
-    // =========================
-    // DASHBOARD
-    // =========================
-    {
-      to: '/dashboard',
-      label: 'Dashboard',
-      icon: FiHome,
-    },
+  // Only Super Admin gets the full cross-team analytics Dashboard. Team
+  // roles land on / navigate to their own team dashboard instead (bundled
+  // inside their module block below), keeping things properly segregated.
+  if (isSuperAdminRole(role)) {
+    items.push({ to: '/dashboard', label: 'Dashboard', icon: FiHome });
+  }
 
-    // =========================
-    // SALES TEAM
-    // =========================
-    {
-      label: 'Sales Team',
-      icon: FiUsers,
-      children: [
-        {
-          to: '/clients',
-          label: 'Total Clients',
-          icon: FiUsers,
-        },
-        {
-          to: '/followups',
-          label: 'Follow-Ups',
-          icon: FiCalendar,
-        },
-        {
-          to: '/interactions',
-          label: 'Interactions',
-          icon: FiMessageSquare,
-        },
-      ],
-    },
+  MODULE_BLOCKS.forEach((block) => {
+    // Super Admin gets a single dedicated "User Approvals" entry instead of
+    // the per-team "Team Access" shortcut (added further down).
+    if (block.moduleKey === 'team' && isSuperAdminRole(role)) return;
+    if (!canAccessModule(role, block.moduleKey)) return;
+    items.push(block);
+  });
 
-    // =========================
-    // CUSTOMER DETAILS
-    // =========================
-    // {
-    //   to: '/customer-details',
-    //   label: 'Customer Details',
-    //   icon: FiUsers,
-    // },
+  // Super Admin gets a dedicated approvals panel on top of everything else.
+  if (isSuperAdminRole(role)) {
+    items.push({ to: '/user-approvals', label: 'User Approvals', icon: FiShield });
+  }
 
-    // =========================
-    // ACCOUNT
-    // =========================
-    {
-      label: 'Account',
-      icon: FiShoppingBag,
-      children: [
-        {
-          to: '/account',
-          label: 'Account Overview',
-          icon: FiGrid,
-        },
-        {
-          to: '/invoice',
-          label: 'Invoice',
-          icon: FiFileText,
-        },
-        {
-          to: '/credit-note',
-          label: 'Credit Note',
-          icon: FiFileText,
-        },
-        {
-          to: '/delivery-challan',
-          label: 'Delivery Challan',
-          icon: FiTruck,
-        },
-        {
-          to: '/history',
-          label: 'History',
-          icon: FiClock,
-        },
-        {
-          to: '/sales-settings',
-          label: 'Account Settings',
-          icon: FiPackage,
-        },
-        {
-          to: '/sales-quotations',
-          label: 'Sales Quotation',
-          icon: FiFileText,
-        },
-        // {
-        //   to: '/converted-quotations',
-        //   label: 'Converted Quotations',
-        //   icon: FiFileText,
-        // },
-      ],
-    },
-
-    // =========================
-    // INVENTORY
-    // =========================
-    {
-      label: 'Inventory',
-      icon: FiPackage,
-      children: [
-        {
-          to: '/inventory/products',
-          label: 'Products',
-          icon: FiPackage,
-        },
-        {
-          to: '/inventory/godowns',
-          label: 'Godowns',
-          icon: FiPackage,
-        },
-        {
-          to: '/inventory/categories',
-          label: 'Categories',
-          icon: FiPackage,
-        },
-        {
-          to: '/inventory/subcategories',
-          label: 'Sub Categories',
-          icon: FiLayers,
-        },
-      ],
-    },
-
-    // =========================
-    // PURCHASE HISTORY
-    // =========================
-    {
-      to: '/purchase-history',
-      label: 'Purchase History',
-      icon: FiShoppingBag,
-    },
-
-    // =========================
-    // SAVED QUOTATIONS
-    // ADMIN ONLY
-    // =========================
-    ...(isAdmin
-      ? [
-          // {
-          //   to: '/saved-quotations',
-          //   label: 'Saved Quotations',
-          //   icon: FiDownload,
-          // },
-        ]
-      : []),
-
-    // =========================
-    // SERVICE MANAGEMENT
-    // =========================
-    {
-      to: '/service-management',
-      label: 'Service Management',
-      icon: FiUserPlus,
-    },
-
-    // =========================
-    // EMPLOYEES
-    // =========================
-    {
-      to: '/employees',
-      label: 'Employees',
-      icon: FiBriefcase,
-    },
-
-    // =========================
-    // FSM
-    // =========================
-    {
-      label: 'FSM',
-      icon: FiUserCheck,
-      children: [
-        {
-          to: '/fsm-requests',
-          label: 'Technician Requests',
-          icon: FiUserCheck,
-        },
-        {
-          to: '/fsm-jobs',
-          label: 'Job Requests',
-          icon: FiBriefcase,
-        },
-        {
-          to: '/fsm-leaves',
-          label: 'Leave Requests',
-          icon: FiCalendar,
-        },
-      ],
-    },
-
-    // =========================
-    // DISTRIBUTION
-    // =========================
-    {
-      to: '/distribution',
-      label: 'Distribution',
-      icon: FiPackage,
-    },
-
-    // =========================
-    // CAMPAIGNS
-    // =========================
-    {
-      to: '/campaigns',
-      label: 'Campaigns',
-      icon: FiTarget,
-    },
-
-    // =========================
-    // B2C
-    // =========================
-    {
-      label: 'B2C (Website + App)',
-      icon: FiSmartphone,
-      children: [
-        {
-          to: '/b2c',
-          label: 'B2C Overview',
-          icon: FiGrid,
-        },
-        {
-          to: '/inventory/products',
-          label: 'Products',
-          icon: FiPackage,
-        },
-        {
-          to: '/inventory/categories',
-          label: 'Categories',
-          icon: FiLayers,
-        },
-        {
-          to: '/inventory/subcategories',
-          label: 'Sub Categories',
-          icon: FiLayers,
-        },
-        {
-          to: '/b2c/orders',
-          label: 'Orders',
-          icon: FiShoppingBag,
-        },
-        {
-          to: '/b2c/services',
-          label: 'Services',
-          icon: FiTool,
-        },
-        {
-          to: '/b2c/service-bookings',
-          label: 'Service Bookings',
-          icon: FiCalendar,
-        },
-        {
-          to: '/b2c/reviews',
-          label: 'Reviews',
-          icon: FiStar,
-        },
-        {
-          to: '/b2c/banners',
-          label: 'App Banners / Carousel',
-          icon: FiImage,
-        },
-      ],
-    },
-
-    // =========================
-    // WEBSITE
-    // =========================
-    ...(websiteSyncModulesEnabled
-      ? [
-          {
-            label: 'Website',
-            icon: FiUsers,
-            children: [
-              {
-                to: '/website-users',
-                label: 'Website Users',
-                icon: FiUsers,
-              },
-              {
-                to: '/website-orders',
-                label: 'Website Orders',
-                icon: FiShoppingBag,
-              },
-              {
-                to: '/website-bookings',
-                label: 'Website Bookings',
-                icon: FiCalendar,
-              },
-              {
-                to: '/website-contacts',
-                label: 'Website Contacts',
-                icon: FiMail,
-              },
-            ],
-          },
-        ]
-      : []),
-  ];
+  return items;
 };
 
 const SidebarDropdown = ({ item }) => {

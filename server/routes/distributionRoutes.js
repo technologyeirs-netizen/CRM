@@ -13,8 +13,8 @@ const { protect, authorize } = require('../middleware/auth');
 
 router.get('/stats', protect, getDistributionStats);
 router.get('/my', protect, getMyDistributions);
-router.route('/').get(protect, getDistributions).post(protect, authorize('admin'), createDistribution);
+router.route('/').get(protect, getDistributions).post(protect, authorize('admin', 'delivery'), createDistribution);
 router.put('/my/:id', protect, updateMyDistribution);
-router.route('/:id').put(protect, authorize('admin'), updateDistribution).delete(protect, authorize('admin'), deleteDistribution);
+router.route('/:id').put(protect, authorize('admin', 'delivery'), updateDistribution).delete(protect, authorize('admin', 'delivery'), deleteDistribution);
 
 module.exports = router;

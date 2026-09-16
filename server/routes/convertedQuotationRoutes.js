@@ -7,6 +7,9 @@ const {
   getConvertedQuotationById,
   deleteConvertedQuotation,
 } = require("../controllers/convertedQuotationController");
+const { protect, authorize } = require("../middleware/auth");
+
+router.use(protect, authorize('admin', 'account'));
 
 // Convert an invoice into a quotation (deducts stock)
 router.post("/from-invoice/:invoiceId", createFromInvoice);

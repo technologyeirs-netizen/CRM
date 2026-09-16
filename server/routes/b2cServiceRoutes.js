@@ -11,13 +11,13 @@ const { protect, authorize } = require('../middleware/auth');
 
 router
   .route('/')
-  .get(protect, authorize('admin'), getServices)
-  .post(protect, authorize('admin'), createService);
+  .get(protect, authorize('admin', 'b2c'), getServices)
+  .post(protect, authorize('admin', 'b2c'), createService);
 
 router
   .route('/:id')
-  .get(protect, authorize('admin'), getServiceById)
-  .put(protect, authorize('admin'), updateService)
-  .delete(protect, authorize('admin'), deleteService);
+  .get(protect, authorize('admin', 'b2c'), getServiceById)
+  .put(protect, authorize('admin', 'b2c'), updateService)
+  .delete(protect, authorize('admin', 'b2c'), deleteService);
 
 module.exports = router;

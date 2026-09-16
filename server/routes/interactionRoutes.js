@@ -20,6 +20,6 @@ router
   .route('/:id')
   .get(protect, getInteractionById)
   .put(protect, updateInteraction)
-  .delete(protect, authorize('admin'), deleteInteraction);
+  .delete(protect, authorize('admin', 'sales'), deleteInteraction);
 
 module.exports = router;

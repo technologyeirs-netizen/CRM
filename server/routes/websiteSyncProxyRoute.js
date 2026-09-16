@@ -13,7 +13,7 @@ const router = express.Router();
 const MAIN_SERVER_URL = process.env.MAIN_SERVER_URL || 'https://eirs-technology-production.up.railway.app';
 
 // Middleware to ensure user is admin
-router.use(protect, authorize('admin'));
+router.use(protect, authorize('admin', 'website'));
 
 /**
  * GET /api/website-sync/stats

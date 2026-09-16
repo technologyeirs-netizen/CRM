@@ -24,8 +24,20 @@ const UserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'agent', 'employee'],
-      default: 'agent',
+      enum: [
+        'admin', // legacy alias, treated as superadmin
+        'superadmin',
+        'account',
+        'sales',
+        'service',
+        'delivery',
+        'hr',
+        'b2c',
+        'website',
+        'agent', // legacy default, unused going forward
+        'employee',
+      ],
+      default: 'employee',
     },
     isAdmin: {
       type: Boolean,
@@ -35,6 +47,29 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Approval workflow: a team lead (account/sales/service/delivery/hr/b2c/website)
+    // can invite a colleague into their own team, but that account stays
+    // "pending" until the Super Admin reviews and approves it.
+    status: {
+      type: String,
+      enum: ['active', 'pending', 'rejected'],
+      default: 'active',
+    },
+    // Who created this login (null when created directly by Super Admin/bootstrap).
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
     avatar: {
       type: String,
       default: '',
@@ -42,6 +77,15 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Keep isAdmin in sync with role so older parts of the app that still check
+// `isAdmin` keep working exactly like a Super Admin.
+UserSchema.pre('save', function (next) {
+  if (this.role === 'admin' || this.role === 'superadmin') {
+    this.isAdmin = true;
+  }
+  next();
+});
 
 // Hash password before saving
 UserSchema.pre('save', async function (next) {

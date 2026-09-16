@@ -22,25 +22,25 @@ const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/stats', protect, authorize('admin'), getWebsiteSyncStats);
-router.get('/users', protect, authorize('admin'), getWebsiteUsers);
-router.get('/orders', protect, authorize('admin'), getWebsiteOrders);
-router.get('/bookings', protect, authorize('admin'), getWebsiteBookings);
-router.get('/contacts', protect, authorize('admin'), getWebsiteContacts);
+router.get('/stats', protect, authorize('admin', 'website'), getWebsiteSyncStats);
+router.get('/users', protect, authorize('admin', 'website'), getWebsiteUsers);
+router.get('/orders', protect, authorize('admin', 'website'), getWebsiteOrders);
+router.get('/bookings', protect, authorize('admin', 'website'), getWebsiteBookings);
+router.get('/contacts', protect, authorize('admin', 'website'), getWebsiteContacts);
 
-router.post('/users', protect, authorize('admin'), upsertWebsiteUser);
-router.post('/orders', protect, authorize('admin'), upsertWebsiteOrder);
-router.post('/bookings', protect, authorize('admin'), upsertWebsiteBooking);
-router.post('/contacts', protect, authorize('admin'), upsertWebsiteContact);
+router.post('/users', protect, authorize('admin', 'website'), upsertWebsiteUser);
+router.post('/orders', protect, authorize('admin', 'website'), upsertWebsiteOrder);
+router.post('/bookings', protect, authorize('admin', 'website'), upsertWebsiteBooking);
+router.post('/contacts', protect, authorize('admin', 'website'), upsertWebsiteContact);
 
-router.put('/users/:id', protect, authorize('admin'), updateWebsiteUser);
-router.put('/orders/:id', protect, authorize('admin'), updateWebsiteOrder);
-router.put('/bookings/:id', protect, authorize('admin'), updateWebsiteBooking);
-router.put('/contacts/:id', protect, authorize('admin'), updateWebsiteContact);
+router.put('/users/:id', protect, authorize('admin', 'website'), updateWebsiteUser);
+router.put('/orders/:id', protect, authorize('admin', 'website'), updateWebsiteOrder);
+router.put('/bookings/:id', protect, authorize('admin', 'website'), updateWebsiteBooking);
+router.put('/contacts/:id', protect, authorize('admin', 'website'), updateWebsiteContact);
 
-router.delete('/users/:id', protect, authorize('admin'), deleteWebsiteUser);
-router.delete('/orders/:id', protect, authorize('admin'), deleteWebsiteOrder);
-router.delete('/bookings/:id', protect, authorize('admin'), deleteWebsiteBooking);
-router.delete('/contacts/:id', protect, authorize('admin'), deleteWebsiteContact);
+router.delete('/users/:id', protect, authorize('admin', 'website'), deleteWebsiteUser);
+router.delete('/orders/:id', protect, authorize('admin', 'website'), deleteWebsiteOrder);
+router.delete('/bookings/:id', protect, authorize('admin', 'website'), deleteWebsiteBooking);
+router.delete('/contacts/:id', protect, authorize('admin', 'website'), deleteWebsiteContact);
 
 module.exports = router;

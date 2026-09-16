@@ -10,12 +10,12 @@ const {
 const { protect, authorize } = require('../middleware/auth');
 const { bannerUpload } = require('../config/cloudinary');
 
-router.get('/', protect, authorize('admin'), getBanners);
+router.get('/', protect, authorize('admin', 'b2c'), getBanners);
 
 router.post(
   '/upload-image',
   protect,
-  authorize('admin'),
+  authorize('admin', 'b2c'),
   (req, res, next) => {
     bannerUpload.single('image')(req, res, (err) => {
       if (err) return res.status(400).json({ success: false, message: err.message });
@@ -28,9 +28,9 @@ router.post(
   }
 );
 
-router.post('/', protect, authorize('admin'), createBanner);
-router.put('/reorder', protect, authorize('admin'), reorderBanners);
-router.put('/:id', protect, authorize('admin'), updateBanner);
-router.delete('/:id', protect, authorize('admin'), deleteBanner);
+router.post('/', protect, authorize('admin', 'b2c'), createBanner);
+router.put('/reorder', protect, authorize('admin', 'b2c'), reorderBanners);
+router.put('/:id', protect, authorize('admin', 'b2c'), updateBanner);
+router.delete('/:id', protect, authorize('admin', 'b2c'), deleteBanner);
 
 module.exports = router;
