@@ -45,9 +45,9 @@ const uploadImportFile = (req, res, next) => {
 };
 
 router.get('/stats', protect, getProspectStats);
-router.get('/export', protect, authorize('admin'), exportProspectsToExcel);
-router.post('/import', protect, authorize('admin'), uploadImportFile, importProspectsFromExcel);
+router.get('/export', protect, authorize('admin', 'service'), exportProspectsToExcel);
+router.post('/import', protect, authorize('admin', 'service'), uploadImportFile, importProspectsFromExcel);
 router.route('/').get(protect, getProspects).post(protect, createProspect);
-router.route('/:id').put(protect, updateProspect).delete(protect, authorize('admin'), deleteProspect);
+router.route('/:id').put(protect, updateProspect).delete(protect, authorize('admin', 'service'), deleteProspect);
 
 module.exports = router;

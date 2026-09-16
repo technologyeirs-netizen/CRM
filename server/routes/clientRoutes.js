@@ -49,8 +49,8 @@ const uploadImportFile = (req, res, next) => {
 
 // Stats route MUST come before /:id routes
 router.get('/stats', protect, getClientStats);
-router.get('/export', protect, authorize('admin'), exportClientsToExcel);
-router.post('/import', protect, authorize('admin'), uploadImportFile, importClientsFromExcel);
+router.get('/export', protect, authorize('admin', 'sales'), exportClientsToExcel);
+router.post('/import', protect, authorize('admin', 'sales'), uploadImportFile, importClientsFromExcel);
 
 router.route('/').get(protect, getClients).post(protect, createClient);
 
@@ -63,6 +63,6 @@ router
   .route('/:id')
   .get(protect, getClientById)
   .put(protect, updateClient)
-  .delete(protect, authorize('admin'), deleteClient);
+  .delete(protect, authorize('admin', 'sales'), deleteClient);
 
 module.exports = router;

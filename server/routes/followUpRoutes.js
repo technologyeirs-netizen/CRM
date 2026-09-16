@@ -20,6 +20,6 @@ router
   .route('/:id')
   .get(protect, getFollowUpById)
   .put(protect, updateFollowUp)
-  .delete(protect, authorize('admin'), deleteFollowUp);
+  .delete(protect, authorize('admin', 'sales'), deleteFollowUp);
 
 module.exports = router;

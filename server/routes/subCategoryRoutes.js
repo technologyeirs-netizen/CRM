@@ -17,12 +17,12 @@ router
   .route("/")
   .get(
     protect,
-    authorize("admin"),
+    authorize("admin", "account", "b2c", "delivery"),
     getSubCategories
   )
   .post(
     protect,
-    authorize("admin"),
+    authorize("admin", "account", "b2c", "delivery"),
     createSubCategory
   );
 
@@ -30,12 +30,12 @@ router
   .route("/:id")
   .put(
     protect,
-    authorize("admin"),
+    authorize("admin", "account", "b2c", "delivery"),
     updateSubCategory
   )
   .delete(
     protect,
-    authorize("admin"),
+    authorize("admin", "account", "b2c", "delivery"),
     deleteSubCategory
   );
 

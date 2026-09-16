@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import API from '../api/axios';
 import toast from 'react-hot-toast';
+import { getHomeRoute, isSuperAdminRole, isTeamRole } from '../config/roles';
 
 const AuthContext = createContext(null);
 
@@ -26,8 +27,11 @@ export const AuthProvider = ({ children }) => {
         id: backendUser.id,
         name: backendUser.name,
         email: backendUser.email,
-        isAdmin: Boolean(backendUser.isAdmin || backendUser.role === 'admin'),
-        role: backendUser.role || 'admin',
+        isAdmin: Boolean(
+          backendUser.isAdmin || backendUser.role === 'admin' || backendUser.role === 'superadmin'
+        ),
+        role: backendUser.role || 'employee',
+        status: backendUser.status || 'active',
       };
 
       localStorage.setItem('crm_token', token);
@@ -36,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       toast.success(`Welcome back, ${normalizedUser.name}!`);
       return {
         success: true,
-        redirectTo: normalizedUser.role === 'employee' ? '/employee-dashboard' : '/dashboard',
+        redirectTo: getHomeRoute(normalizedUser.role),
         user: normalizedUser,
       };
     } catch (error) {
@@ -65,11 +69,15 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
-  const isAdmin = Boolean(user?.isAdmin || user?.role === 'admin');
+  const isAdmin = Boolean(user?.isAdmin) || isSuperAdminRole(user?.role);
+  const isSuperAdmin = isAdmin;
   const isEmployee = user?.role === 'employee';
+  const isTeamLead = isTeamRole(user?.role);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, isAdmin, isEmployee }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, logout, updateUser, isAdmin, isSuperAdmin, isEmployee, isTeamLead }}
+    >
       {children}
     </AuthContext.Provider>
   );

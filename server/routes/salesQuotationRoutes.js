@@ -9,12 +9,12 @@ const {
   deleteSalesQuotation,
   convertQuotationToInvoice,
 } = require("../controllers/salesQuotationController");
-const { protect } = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
 
 // Needed so req.user is populated - the activity/history log
 // records who (which logged-in user) created/edited/deleted
 // each quotation.
-router.use(protect);
+router.use(protect, authorize('admin', 'account'));
 
 // ============================================
 // CREATE

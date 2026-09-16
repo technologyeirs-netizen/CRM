@@ -114,6 +114,7 @@ if (fs.existsSync(clientBuildPath)) {
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/clients', require('./routes/clientRoutes'));
 app.use('/api/followups', require('./routes/followUpRoutes'));
 app.use('/api/interactions', require('./routes/interactionRoutes'));

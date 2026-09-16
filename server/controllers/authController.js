@@ -2,8 +2,14 @@ const User = require('../models/User');
 const Employee = require('../models/Employee');
 const bootstrapAdminFromEnv = require('../config/bootstrapAdmin');
 const { generateAndSendOtpToEmail, verifyEmailOtp } = require('../services/otpService');
+const { TEAM_ROLES } = require('../config/roles');
 
-// @desc    Register a new admin/agent
+// @desc    Public self-registration for a team role. Kept for backward
+//          compatibility, but a self-registered account can never receive a
+//          Super Admin role and always starts as "pending" — it still needs
+//          Super Admin approval before it can log in. The preferred way to
+//          add team members is via POST /api/users (invited by a team lead
+//          or the Super Admin directly).
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = async (req, res) => {
@@ -11,19 +17,29 @@ exports.register = async (req, res) => {
     const { name, email, password, role } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
 
+    if (!name || !normalizedEmail || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email and password are required' });
+    }
+
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
 
-    const user = await User.create({ name, email: normalizedEmail, password, role });
-    const token = user.getSignedJwtToken();
+    const safeRole = TEAM_ROLES.includes(role) ? role : 'sales';
+
+    const user = await User.create({
+      name,
+      email: normalizedEmail,
+      password,
+      role: safeRole,
+      status: 'pending',
+    });
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
-      token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      message: 'Registered successfully. Please wait for Super Admin approval before logging in.',
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, status: user.status },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -82,26 +98,62 @@ exports.login = async (req, res) => {
       return authUser;
     };
 
-    if (user) {
-      const userPasswordMatch = await user.matchPassword(password);
-      if (userPasswordMatch) {
-        const isEmployeeLogin = user.role === 'employee' || Boolean(employee);
+    // ── 1) Field-staff (Employee collection) login — unchanged behaviour ──
+    if (employee && employee.password) {
+      const employeePasswordMatch = await employee.matchPassword(password);
+      if (employeePasswordMatch) {
+        const authUser = await syncEmployeeUser(employee);
+        const token = authUser.getSignedJwtToken();
+        console.log(`[LOGIN] ✓ Successful employee login for: ${normalizedEmail}`);
 
-        if (isEmployeeLogin) {
-          const authUser = await syncEmployeeUser(employee || { name: user.name, email: user.email });
-          const token = authUser.getSignedJwtToken();
-          console.log(`[LOGIN] ✓ Successful login for: ${normalizedEmail}`);
-
-          return res.status(200).json({
-            success: true,
-            message: 'Logged in successfully',
-            token,
-            data: { id: authUser._id, name: authUser.name, email: authUser.email, role: authUser.role, isAdmin: authUser.isAdmin },
-          });
-        }
+        return res.status(200).json({
+          success: true,
+          message: 'Logged in successfully',
+          token,
+          data: { id: authUser._id, name: authUser.name, email: authUser.email, role: authUser.role, isAdmin: authUser.isAdmin, status: authUser.status },
+        });
       }
     }
 
+    // ── 2) Team-role / Super Admin login (User collection accounts) ──
+    if (user && user.role !== 'employee') {
+      const userPasswordMatch = await user.matchPassword(password);
+      if (userPasswordMatch) {
+        if (user.status === 'pending') {
+          console.log(`[LOGIN] ⏳ Pending approval for: ${normalizedEmail}`);
+          return res.status(403).json({
+            success: false,
+            status: 'pending',
+            message: 'Your account is awaiting Super Admin approval. Please try again once approved.',
+          });
+        }
+
+        if (user.status === 'rejected') {
+          console.log(`[LOGIN] ✗ Rejected account attempted login: ${normalizedEmail}`);
+          return res.status(403).json({
+            success: false,
+            status: 'rejected',
+            message: 'Your account request was rejected by the Super Admin.',
+          });
+        }
+
+        if (!user.isActive) {
+          return res.status(401).json({ success: false, message: 'Account deactivated' });
+        }
+
+        const token = user.getSignedJwtToken();
+        console.log(`[LOGIN] ✓ Successful login for: ${normalizedEmail} (role: ${user.role})`);
+
+        return res.status(200).json({
+          success: true,
+          message: 'Logged in successfully',
+          token,
+          data: { id: user._id, name: user.name, email: user.email, role: user.role, isAdmin: user.isAdmin, status: user.status },
+        });
+      }
+    }
+
+    // ── 3) Env-based Super Admin alias bootstrap (first-time setup) ──
     if (isAdminAlias && adminPassword && password === adminPassword) {
       await bootstrapAdminFromEnv();
 
@@ -114,33 +166,13 @@ exports.login = async (req, res) => {
           success: true,
           message: 'Logged in successfully',
           token,
-          data: { id: adminUser._id, name: adminUser.name, email: adminUser.email, role: adminUser.role, isAdmin: adminUser.isAdmin },
+          data: { id: adminUser._id, name: adminUser.name, email: adminUser.email, role: adminUser.role, isAdmin: adminUser.isAdmin, status: adminUser.status },
         });
       }
     }
 
-    if (!employee || !employee.password) {
-      console.log(`[LOGIN] User not found or inactive: ${normalizedEmail}`);
-      return res.status(401).json({ success: false, message: 'Invalid credentials or account deactivated' });
-    }
-
-    const employeePasswordMatch = await employee.matchPassword(password);
-    if (!employeePasswordMatch) {
-      console.log(`[LOGIN] Password mismatch for employee: ${normalizedEmail}`);
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-
-    const authUser = await syncEmployeeUser(employee);
-
-    const token = authUser.getSignedJwtToken();
-    console.log(`[LOGIN] ✓ Successful login for: ${normalizedEmail}`);
-
-    res.status(200).json({
-      success: true,
-      message: 'Logged in successfully',
-      token,
-      data: { id: authUser._id, name: authUser.name, email: authUser.email, role: authUser.role, isAdmin: authUser.isAdmin },
-    });
+    console.log(`[LOGIN] Invalid credentials for: ${normalizedEmail}`);
+    return res.status(401).json({ success: false, message: 'Invalid credentials or account deactivated' });
   } catch (error) {
     console.error('[authController.login] ❌ Error:', error.message);
     console.error('[authController.login] Stack:', error.stack);

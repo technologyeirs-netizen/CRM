@@ -6,6 +6,9 @@ const {
   getSalesSetting,
   updateSalesSetting,
 } = require("../controllers/salesSettingController");
+const { protect, authorize } = require("../middleware/auth");
+
+router.use(protect, authorize('admin', 'account'));
 
 router.get("/", getSalesSetting);
 

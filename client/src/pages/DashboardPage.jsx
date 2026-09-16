@@ -7,6 +7,9 @@ import {
   FiTool,
   FiTruck,
   FiUsers,
+  FiSmartphone,
+  FiGlobe,
+  FiShield,
 } from "react-icons/fi";
 
 import { clientService } from "../services/clientService";
@@ -244,6 +247,114 @@ const DashboardPage = () => {
             </span>
 
             <span className="text-sm font-semibold text-pink-600 transition-transform duration-300 group-hover:translate-x-1">
+              View →
+            </span>
+          </div>
+        </Link>
+
+        {/* B2C */}
+        <Link
+          to="/b2c"
+          className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">
+                B2C
+              </p>
+
+              <h3 className="mt-2 text-2xl font-bold text-slate-900">
+                B2C
+              </h3>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Website + App Orders
+              </p>
+            </div>
+
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 transition-all duration-300 group-hover:bg-cyan-600 group-hover:text-white">
+              <FiSmartphone size={23} />
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+            <span className="text-sm font-medium text-slate-600">
+              B2C Overview
+            </span>
+
+            <span className="text-sm font-semibold text-cyan-600 transition-transform duration-300 group-hover:translate-x-1">
+              View →
+            </span>
+          </div>
+        </Link>
+
+        {/* Website */}
+        <Link
+          to="/website-users"
+          className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">
+                Website
+              </p>
+
+              <h3 className="mt-2 text-2xl font-bold text-slate-900">
+                Website
+              </h3>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Users, Orders &amp; Bookings
+              </p>
+            </div>
+
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition-all duration-300 group-hover:bg-indigo-600 group-hover:text-white">
+              <FiGlobe size={23} />
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+            <span className="text-sm font-medium text-slate-600">
+              Website Overview
+            </span>
+
+            <span className="text-sm font-semibold text-indigo-600 transition-transform duration-300 group-hover:translate-x-1">
+              View →
+            </span>
+          </div>
+        </Link>
+
+        {/* User Approvals */}
+        <Link
+          to="/user-approvals"
+          className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">
+                Team Access
+              </p>
+
+              <h3 className="mt-2 text-2xl font-bold text-slate-900">
+                Users
+              </h3>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Approve New Team Logins
+              </p>
+            </div>
+
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition-all duration-300 group-hover:bg-amber-600 group-hover:text-white">
+              <FiShield size={23} />
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+            <span className="text-sm font-medium text-slate-600">
+              Manage All Users
+            </span>
+
+            <span className="text-sm font-semibold text-amber-600 transition-transform duration-300 group-hover:translate-x-1">
               View →
             </span>
           </div>
