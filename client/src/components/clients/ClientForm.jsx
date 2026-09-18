@@ -28,19 +28,57 @@ const ClientForm = ({ isOpen, onClose, editData, onSaved }) => {
     }
   }, [editData, isOpen]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name.startsWith('address.')) {
-      const field = name.split('.')[1];
-      setForm((prev) => ({ ...prev, address: { ...prev.address, [field]: value } }));
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
-    }
-  };
+ const handleChange = (e) => {
+  const { name, value } = e.target;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  // Phone numbers: only digits, max 10
+  if (name === 'phone' || name === 'alternatePhone') {
+    const numericValue = value.replace(/\D/g, '').slice(0, 10);
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: numericValue,
+    }));
+
+    return;
+  }
+
+  if (name.startsWith('address.')) {
+    const field = name.split('.')[1];
+
+    setForm((prev) => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        [field]: value,
+      },
+    }));
+  } else {
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+};
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!/^\d{10}$/.test(form.phone)) {
+    toast.error('Phone number must be exactly 10 digits');
+    return;
+  }
+
+  if (
+    form.alternatePhone &&
+    !/^\d{10}$/.test(form.alternatePhone)
+  ) {
+    toast.error('Alternate phone number must be exactly 10 digits');
+    return;
+  }
+
+  setLoading(true);
+   
     try {
       const payload = {
         ...form,
@@ -95,7 +133,19 @@ const ClientForm = ({ isOpen, onClose, editData, onSaved }) => {
           </div>
           <div className="form-group">
             <label className="form-label">Phone *</label>
-            <input className="form-control" name="phone" value={form.phone} onChange={handleChange} required placeholder="+91 9876543210" />
+           <input
+  className="form-control"
+  type="tel"
+  name="phone"
+  value={form.phone}
+  onChange={handleChange}
+  required
+  maxLength={10}
+  minLength={10}
+  pattern="[0-9]{10}"
+  inputMode="numeric"
+  placeholder="9876543210"
+/>
           </div>
         </div>
         <div className="form-row">
@@ -105,7 +155,18 @@ const ClientForm = ({ isOpen, onClose, editData, onSaved }) => {
           </div>
           <div className="form-group">
             <label className="form-label">Alternate Phone</label>
-            <input className="form-control" name="alternatePhone" value={form.alternatePhone} onChange={handleChange} placeholder="+91..." />
+            <input
+  className="form-control"
+  type="tel"
+  name="alternatePhone"
+  value={form.alternatePhone}
+  onChange={handleChange}
+  maxLength={10}
+  minLength={10}
+  pattern="[0-9]{10}"
+  inputMode="numeric"
+  placeholder="9876543210"
+/>
           </div>
         </div>
         <div className="form-row">

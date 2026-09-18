@@ -1,10 +1,19 @@
 const User = require('../models/User');
 const { TEAM_ROLES, TEAM_LABELS, isSuperAdminRole } = require('../config/roles');
+const { decryptPassword } = require('../utils/passwordCrypto');
+
+// Only accounts added through "Add Team User" (Super Admin / team lead invite,
+// bootstrap admin, employee-login sync) should ever show up on the Team
+// Users / Approval screen. Public self-registrations (accountType: 'self') —
+// e.g. a client logging in from the website — are excluded here so they
+// never appear in this list.
+const TEAM_USER_FILTER = { accountType: 'team' };
 
 const shapeUser = (u) => ({
   id: u._id,
   name: u.name,
   email: u.email,
+  password: decryptPassword(u.passwordEncrypted),
   role: u.role,
   roleLabel: TEAM_LABELS[u.role] || u.role,
   status: u.status,
@@ -98,10 +107,10 @@ exports.getUsers = async (req, res) => {
     const requesterIsSuperAdmin = Boolean(requester.isAdmin) || isSuperAdminRole(requester.role);
 
     const query = requesterIsSuperAdmin
-      ? {}
-      : { $or: [{ _id: requester._id }, { createdBy: requester._id }] };
+      ? { ...TEAM_USER_FILTER }
+      : { ...TEAM_USER_FILTER, $or: [{ _id: requester._id }, { createdBy: requester._id }] };
 
-    const users = await User.find(query).sort({ createdAt: -1 });
+    const users = await User.find(query).select('+passwordEncrypted').sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: users.length, users: users.map(shapeUser) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -113,7 +122,8 @@ exports.getUsers = async (req, res) => {
 // @access  Private/Super Admin
 exports.getPendingUsers = async (req, res) => {
   try {
-    const users = await User.find({ status: 'pending' })
+    const users = await User.find({ ...TEAM_USER_FILTER, status: 'pending' })
+      .select('+passwordEncrypted')
       .populate('createdBy', 'name email role')
       .sort({ createdAt: -1 });
 

@@ -34,6 +34,10 @@ exports.register = async (req, res) => {
       password,
       role: safeRole,
       status: 'pending',
+      // Public self-registration (e.g. a client signing up on the website).
+      // Kept out of the internal "Team Users / Approval" screen — that list
+      // should only ever show logins added via "Add Team User".
+      accountType: 'self',
     });
 
     res.status(201).json({

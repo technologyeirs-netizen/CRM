@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FiEdit2, FiLayers, FiPlus, FiSave, FiTrash2 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Spinner from "../components/common/Spinner";
@@ -47,7 +47,80 @@ const initialGodownForm = {
   city: "",
 };
 
-const normalizeNumber = (value) => Number(value || 0);
+// Negative values are never valid for prices, rates or stock.
+const clampNonNegative = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return parsed < 0 ? 0 : parsed;
+};
+
+const normalizeNumber = (value) => clampNonNegative(value);
+
+/*
+ * Why this is not a plain <input type="number" min="0">:
+ *
+ * With a controlled number input, pressing the down arrow at 0 makes the
+ * browser write "-1" into the DOM. onChange fires, we clamp it back to 0, but
+ * the state was already 0 - so React sees no change, skips the re-render, and
+ * the DOM keeps showing -1. Press again and it shows -2.
+ *
+ * Keeping the typed text in local state and stripping everything except digits
+ * and one decimal point means a minus sign never reaches the field at all.
+ */
+const NumberInput = ({
+  value,
+  onChange,
+  allowDecimal = true,
+  className = "form-control",
+  ...rest
+}) => {
+  const [draft, setDraft] = useState(() => String(value ?? 0));
+  const focused = useRef(false);
+
+  // Keep the field in sync when the form is reset or loaded for editing.
+  useEffect(() => {
+    if (!focused.current && Number(draft) !== Number(value ?? 0)) {
+      setDraft(String(value ?? 0));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const handleChange = (event) => {
+    const raw = event.target.value;
+
+    // Strip the minus sign, letters, and any extra decimal points.
+    let cleaned = raw.replace(allowDecimal ? /[^0-9.]/g : /[^0-9]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length > 2) {
+      cleaned = `${parts.shift()}.${parts.join("")}`;
+    }
+
+    setDraft(cleaned);
+    onChange(cleaned === "" || cleaned === "." ? 0 : clampNonNegative(cleaned));
+  };
+
+  const handleBlur = () => {
+    focused.current = false;
+    const clamped = clampNonNegative(draft);
+    setDraft(String(clamped));
+    onChange(clamped);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode={allowDecimal ? "decimal" : "numeric"}
+      className={className}
+      value={draft}
+      onFocus={() => {
+        focused.current = true;
+      }}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      {...rest}
+    />
+  );
+};
 
 const InventoryPage = () => {
   const [loading, setLoading] = useState(true);
@@ -185,24 +258,11 @@ const InventoryPage = () => {
 
   const handleLiveProduct = async (itemId) => {
     try {
-      const token = localStorage.getItem("token");
-
-      const { data } = await axios.post(
-        `${API_URL}/items/${itemId}/live`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      alert(data.message);
-
-      // refresh items list
-      fetchItems();
+      const { data } = await itemService.goLive(itemId);
+      toast.success(data?.message || "Product is live");
+      await refreshData();
     } catch (error) {
-      alert(error?.response?.data?.message || "Failed to live product");
+      toast.error(error.response?.data?.message || "Failed to live product");
     }
   };
 
@@ -234,22 +294,25 @@ const InventoryPage = () => {
       category: item.category || "",
       pricingBasis: item.pricingBasis || "",
       pricingMode: item.pricingMode || "without_tax",
-      salesPrice: item.salesPrice || 0,
-      purchasePrice: item.purchasePrice || 0,
-      gstTaxRate: item.gstTaxRate || 0,
-      discountOnSalesPrice: item.discountOnSalesPrice || 0,
-      wholesaleRate: item.wholesaleRate || 0,
+      salesPrice: clampNonNegative(item.salesPrice),
+      purchasePrice: clampNonNegative(item.purchasePrice),
+      gstTaxRate: clampNonNegative(item.gstTaxRate),
+      discountOnSalesPrice: clampNonNegative(item.discountOnSalesPrice),
+      wholesaleRate: clampNonNegative(item.wholesaleRate),
       measuringUnit: item.measuringUnit || "",
       serviceCode: item.serviceCode || "",
       itemCode: item.itemCode || "",
       hsnCode: item.hsnCode || "",
-      openingStock: item.openingStock || 0,
+      openingStock: clampNonNegative(item.openingStock),
       asOfDate: item.asOfDate ? String(item.asOfDate).slice(0, 10) : "",
       description: item.description || "",
       godown: item.godown?._id || item.godown || "",
       remarks: item.remarks || "",
       partyWisePrices: item.partyWisePrices?.length
-        ? item.partyWisePrices
+        ? item.partyWisePrices.map((row) => ({
+            partyName: row.partyName || "",
+            price: clampNonNegative(row.price),
+          }))
         : [{ partyName: "", price: 0 }],
       customFields: item.customFields?.length
         ? item.customFields
@@ -320,6 +383,38 @@ const InventoryPage = () => {
       return;
     }
 
+    const numericFields = {
+      "Sales price": itemForm.salesPrice,
+      "Purchase price": itemForm.purchasePrice,
+      "GST tax rate": itemForm.gstTaxRate,
+      "Discount on sales price": itemForm.discountOnSalesPrice,
+      "Wholesale rate": itemForm.wholesaleRate,
+      "Opening stock": itemForm.openingStock,
+    };
+
+    const negativeField = Object.entries(numericFields).find(
+      ([, value]) => Number(value) < 0,
+    );
+    if (negativeField) {
+      toast.error(`${negativeField[0]} cannot be negative`);
+      return;
+    }
+
+    if (Number(itemForm.gstTaxRate) > 100) {
+      toast.error("GST tax rate cannot be more than 100%");
+      return;
+    }
+
+    if (Number(itemForm.discountOnSalesPrice) > Number(itemForm.salesPrice)) {
+      toast.error("Discount cannot be greater than sales price");
+      return;
+    }
+
+    if ((itemForm.partyWisePrices || []).some((row) => Number(row.price) < 0)) {
+      toast.error("Party wise price cannot be negative");
+      return;
+    }
+
     const payload = {
       ...itemForm,
       salesPrice: normalizeNumber(itemForm.salesPrice),
@@ -330,9 +425,12 @@ const InventoryPage = () => {
       openingStock: normalizeNumber(itemForm.openingStock),
       pricingBasis: itemForm.pricingBasis.trim(),
       pricingMode: itemForm.pricingMode,
-      partyWisePrices: (itemForm.partyWisePrices || []).filter(
-        (row) => row.partyName || row.price,
-      ),
+      partyWisePrices: (itemForm.partyWisePrices || [])
+        .filter((row) => row.partyName || row.price)
+        .map((row) => ({
+          ...row,
+          price: normalizeNumber(row.price),
+        })),
       customFields: (itemForm.customFields || []).filter(
         (row) => row.label || row.value,
       ),
@@ -654,7 +752,7 @@ const InventoryPage = () => {
                 {filteredItems.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       style={{ textAlign: "center", color: "#64748b" }}
                     >
                       {items.length === 0
@@ -674,10 +772,14 @@ const InventoryPage = () => {
                       <td>{item.category || "N/A"}</td>
                       <td>
                         Rs{" "}
-                        {Number(item.salesPrice || 0).toLocaleString("en-IN")}
+                        {clampNonNegative(item.salesPrice).toLocaleString(
+                          "en-IN",
+                        )}
                       </td>
                       <td>
-                        {Number(item.openingStock || 0).toLocaleString("en-IN")}
+                        {clampNonNegative(item.openingStock).toLocaleString(
+                          "en-IN",
+                        )}
                       </td>
                       <td>{item.godown?.name || "N/A"}</td>
                       <td>
@@ -959,16 +1061,11 @@ const InventoryPage = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Opening Stock</label>
-              <input
-                type="number"
-                min="0"
-                className="form-control"
+              <NumberInput
+                allowDecimal={false}
                 value={itemForm.openingStock}
-                onChange={(event) =>
-                  handleItemFormChange(
-                    "openingStock",
-                    Number(event.target.value || 0),
-                  )
+                onChange={(value) =>
+                  handleItemFormChange("openingStock", value)
                 }
               />
             </div>
@@ -1013,76 +1110,53 @@ const InventoryPage = () => {
           <div className="quotation-grid">
             <div className="form-group">
               <label className="form-label">Sales Price</label>
-              <input
-                type="number"
-                min="0"
-                className="form-control"
+              <NumberInput
                 value={itemForm.salesPrice}
-                onChange={(event) =>
-                  handleItemFormChange(
-                    "salesPrice",
-                    Number(event.target.value || 0),
-                  )
-                }
+                onChange={(value) => handleItemFormChange("salesPrice", value)}
               />
             </div>
             <div className="form-group">
               <label className="form-label">Purchase Price</label>
-              <input
-                type="number"
-                min="0"
-                className="form-control"
+              <NumberInput
                 value={itemForm.purchasePrice}
-                onChange={(event) =>
-                  handleItemFormChange(
-                    "purchasePrice",
-                    Number(event.target.value || 0),
-                  )
+                onChange={(value) =>
+                  handleItemFormChange("purchasePrice", value)
                 }
               />
             </div>
             <div className="form-group">
               <label className="form-label">GST Tax Rate (%)</label>
-              <input
-                type="number"
-                min="0"
-                className="form-control"
+              <NumberInput
                 value={itemForm.gstTaxRate}
-                onChange={(event) =>
-                  handleItemFormChange(
-                    "gstTaxRate",
-                    Number(event.target.value || 0),
-                  )
-                }
+                onChange={(value) => handleItemFormChange("gstTaxRate", value)}
               />
+              {Number(itemForm.gstTaxRate) > 100 && (
+                <small style={{ color: "#dc2626" }}>
+                  Tax rate cannot be more than 100%.
+                </small>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Discount on Sales Price</label>
-              <input
-                type="number"
-                min="0"
-                className="form-control"
+              <NumberInput
                 value={itemForm.discountOnSalesPrice}
-                onChange={(event) =>
-                  handleItemFormChange(
-                    "discountOnSalesPrice",
-                    Number(event.target.value || 0),
-                  )
+                onChange={(value) =>
+                  handleItemFormChange("discountOnSalesPrice", value)
                 }
               />
+              {Number(itemForm.discountOnSalesPrice) >
+                Number(itemForm.salesPrice) && (
+                <small style={{ color: "#dc2626" }}>
+                  Discount is more than the sales price. Lower it to save.
+                </small>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Wholesale Rate</label>
-              <input
-                type="number"
-                min="0"
-                className="form-control"
+              <NumberInput
                 value={itemForm.wholesaleRate}
-                onChange={(event) =>
-                  handleItemFormChange(
-                    "wholesaleRate",
-                    Number(event.target.value || 0),
-                  )
+                onChange={(value) =>
+                  handleItemFormChange("wholesaleRate", value)
                 }
               />
             </div>
@@ -1124,17 +1198,10 @@ const InventoryPage = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="form-control"
+                  <NumberInput
                     value={row.price}
-                    onChange={(event) =>
-                      updatePartyWisePrice(
-                        index,
-                        "price",
-                        Number(event.target.value || 0),
-                      )
+                    onChange={(value) =>
+                      updatePartyWisePrice(index, "price", value)
                     }
                   />
                 </div>
@@ -1279,7 +1346,10 @@ const InventoryPage = () => {
               className="form-control"
               value={godownForm.pincode}
               onChange={(event) =>
-                handleGodownFormChange("pincode", event.target.value)
+                handleGodownFormChange(
+                  "pincode",
+                  event.target.value.replace(/[^0-9]/g, ""),
+                )
               }
             />
           </div>
