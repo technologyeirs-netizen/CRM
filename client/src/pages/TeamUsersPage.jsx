@@ -209,6 +209,7 @@ const TeamUsersPage = () => {
               <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Password</th>
                 <th>Team</th>
                 <th>Status</th>
                 <th>Active</th>
@@ -218,7 +219,7 @@ const TeamUsersPage = () => {
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <div className="empty-state">
                       <h3>No users yet</h3>
                       <p>Click "Add {isSuperAdmin ? 'Team User' : 'Colleague'}" to invite someone.</p>
@@ -230,6 +231,7 @@ const TeamUsersPage = () => {
                   <tr key={u.id}>
                     <td>{u.name}</td>
                     <td>{u.email}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{u.password || '—'}</td>
                     <td>{u.roleLabel || ROLE_LABELS[u.role] || u.role}</td>
                     <td><StatusPill status={u.status} /></td>
                     <td>{u.isActive ? 'Yes' : 'No'}</td>
