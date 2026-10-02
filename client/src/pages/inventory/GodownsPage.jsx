@@ -503,16 +503,22 @@ const GodownsPage = () => {
               Pincode
             </label>
 
-            <input
-              className="form-control"
-              value={form.pincode}
-              onChange={(e) =>
-                handleChange(
-                  "pincode",
-                  e.target.value
-                )
-              }
-            />
+            
+<input
+  className="form-control"
+  type="text"
+  inputMode="numeric"
+  maxLength={6}
+  value={form.pincode}
+  onChange={(e) =>
+    handleChange(
+      "pincode",
+      e.target.value.replace(/\D/g, "")
+    )
+  }
+/>
+
+
           </div>
         </div>
       </Modal>

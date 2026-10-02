@@ -1,16 +1,47 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import API from '../api/axios';
 import toast from 'react-hot-toast';
 import { getHomeRoute, isSuperAdminRole, isTeamRole } from '../config/roles';
 
 const AuthContext = createContext(null);
 
+const readStoredPermissions = () => {
+  const stored = localStorage.getItem('crm_permissions');
+  return stored ? JSON.parse(stored) : null;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem('crm_user');
     return stored ? JSON.parse(stored) : null;
   });
+  const [permissions, setPermissions] = useState(readStoredPermissions);
   const [loading, setLoading] = useState(false);
+
+  // Pulls the fresh, tab-by-tab permission matrix for whoever is logged in
+  // right now (see GET /api/auth/me on the server). Called right after
+  // login and once on app boot so a page refresh doesn't lose it.
+  const refreshPermissions = useCallback(async () => {
+    try {
+      const { data } = await API.get('/auth/me');
+      if (data?.permissions) {
+        setPermissions(data.permissions);
+        localStorage.setItem('crm_permissions', JSON.stringify(data.permissions));
+      }
+      return data?.permissions || null;
+    } catch (error) {
+      // Non-fatal — the app falls back to the coarse team-based gating in
+      // config/roles.js if this fails for any reason.
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && !permissions) {
+      refreshPermissions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const login = useCallback(async (email, password) => {
     setLoading(true);
@@ -38,10 +69,14 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('crm_user', JSON.stringify(normalizedUser));
       setUser(normalizedUser);
       toast.success(`Welcome back, ${normalizedUser.name}!`);
+
+      const freshPermissions = await refreshPermissions();
+
       return {
         success: true,
         redirectTo: getHomeRoute(normalizedUser.role),
         user: normalizedUser,
+        permissions: freshPermissions,
       };
     } catch (error) {
       const msg = error.response?.data?.message || error.message || 'Login failed';
@@ -51,12 +86,14 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshPermissions]);
 
   const logout = useCallback(() => {
     localStorage.removeItem('crm_token');
     localStorage.removeItem('crm_user');
+    localStorage.removeItem('crm_permissions');
     setUser(null);
+    setPermissions(null);
     toast.success('Logged out successfully');
   }, []);
 
@@ -74,9 +111,42 @@ export const AuthProvider = ({ children }) => {
   const isEmployee = user?.role === 'employee';
   const isTeamLead = isTeamRole(user?.role);
 
+  // Fine-grained permission check: can('sales-leads', 'assign').
+  // Super Admin always passes.
+  const can = useCallback(
+    (moduleKey, action = 'view') => {
+      if (isAdmin) return true;
+      if (!permissions) return false;
+      if (permissions.isSuperAdmin) return true;
+      if (!permissions.modules) return true;
+      return Boolean(permissions.modules[moduleKey]?.[action]);
+    },
+    [isAdmin, permissions]
+  );
+
+  const canViewFullRevenue = isAdmin || Boolean(permissions?.canViewFullRevenue);
+  const canManageTeamUsers = isAdmin || Boolean(permissions?.canManageTeamUsers);
+  const dataScope = isAdmin ? 'all' : permissions?.dataScope || 'own';
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, logout, updateUser, isAdmin, isSuperAdmin, isEmployee, isTeamLead }}
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        updateUser,
+        isAdmin,
+        isSuperAdmin,
+        isEmployee,
+        isTeamLead,
+        permissions,
+        refreshPermissions,
+        can,
+        canViewFullRevenue,
+        canManageTeamUsers,
+        dataScope,
+      }}
     >
       {children}
     </AuthContext.Provider>

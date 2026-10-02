@@ -78,26 +78,35 @@ const ProspectsPage = () => {
   };
 
   const onSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        ...formData,
-        estimatedValue: Number(formData.estimatedValue || 0),
-      };
+  e.preventDefault();
 
-      if (editData?._id) {
-        await prospectService.update(editData._id, payload);
-        toast.success('Service request updated successfully');
-      } else {
-        await prospectService.create(payload);
-        toast.success('Service request added successfully');
-      }
-      setShowForm(false);
-      fetchData();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save service request');
+  if (!/^\d{10}$/.test(formData.phone)) {
+    toast.error('Phone number must be exactly 10 digits');
+    return;
+  }
+
+  try {
+    const payload = {
+      ...formData,
+      estimatedValue: Number(formData.estimatedValue || 0),
+    };
+
+    if (editData?._id) {
+      await prospectService.update(editData._id, payload);
+      toast.success('Service request updated successfully');
+    } else {
+      await prospectService.create(payload);
+      toast.success('Service request added successfully');
     }
-  };
+
+    setShowForm(false);
+    fetchData();
+  } catch (err) {
+    toast.error(
+      err.response?.data?.message || 'Failed to save service request'
+    );
+  }
+};
 
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete service request "${name}"?`)) return;
@@ -357,9 +366,26 @@ const ProspectsPage = () => {
               <input type="email" className="form-control" required value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} />
             </div>
             <div className="form-group">
-              <label className="form-label">Phone</label>
-              <input className="form-control" required value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} />
-            </div>
+  <label className="form-label">Phone</label>
+  <input
+    type="tel"
+    className="form-control"
+    required
+    inputMode="numeric"
+    pattern="[0-9]{10}"
+    maxLength={10}
+    value={formData.phone}
+    onChange={(e) => {
+      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+
+      setFormData((p) => ({
+        ...p,
+        phone: value,
+      }));
+    }}
+    placeholder="Enter 10 digit phone number"
+  />
+</div>
           </div>
           <div className="form-row">
             <div className="form-group">

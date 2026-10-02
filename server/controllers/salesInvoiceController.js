@@ -3,6 +3,7 @@ const SalesSetting = require("../models/SalesSetting");
 const WebsiteProduct = require("../models/Products");
 const { logActivity } = require("../utils/activityLogger");
 const { adjustProductStock } = require("../utils/stockHelper");
+const { getRevenueScopeFilter } = require("../middleware/permission");
 
 // Fields whose changes are worth showing in the audit history
 // when an invoice is edited.
@@ -215,6 +216,8 @@ const fullInvoiceNumber =
 
 const invoice =
   await SalesInvoice.create({
+
+    createdBy: req.user?._id || null,
 
     party: formattedParty,
 
@@ -482,7 +485,7 @@ const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
 const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
 const skip = (page - 1) * limit;
 
-const filter = {};
+const filter = { ...getRevenueScopeFilter(req) };
 if (req.query.clientId) {
   filter["party.clientId"] = req.query.clientId;
 }
@@ -959,3 +962,52 @@ exports.updateSalesInvoice = async (req, res) => {
 
 };
 
+
+// ============================================
+// GET REVENUE SUMMARY (scoped)
+// ------------------------------------------------
+// Account Manager (canViewFullRevenue: true) -> whole team's revenue.
+// An employee under them (canViewFullRevenue: false) -> only the revenue
+// from invoices THEY created. Same data, different lens — enforced with
+// getRevenueScopeFilter() so the restriction can never be bypassed from
+// the client side.
+// ============================================
+exports.getRevenueSummary = async (req, res) => {
+  try {
+    const filter = { ...getRevenueScopeFilter(req) };
+
+    const [result] = await SalesInvoice.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$totalAmount" },
+          totalReceived: { $sum: "$amountReceived" },
+          totalOutstanding: { $sum: "$balanceAmount" },
+          invoiceCount: { $sum: 1 },
+          paidCount: { $sum: { $cond: [{ $eq: ["$status", "Paid"] }, 1, 0] } },
+          unpaidCount: { $sum: { $cond: [{ $eq: ["$status", "Unpaid"] }, 1, 0] } },
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      scope: req.permissions?.canViewFullRevenue ? "team" : "own",
+      summary: result || {
+        totalRevenue: 0,
+        totalReceived: 0,
+        totalOutstanding: 0,
+        invoiceCount: 0,
+        paidCount: 0,
+        unpaidCount: 0,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed To Fetch Revenue Summary",
+      error: error.message,
+    });
+  }
+};

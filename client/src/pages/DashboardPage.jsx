@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -49,7 +48,7 @@ const DashboardPage = () => {
 
         const salesAmount = invoices.reduce(
           (sum, invoice) => sum + Number(invoice?.amount || 0),
-          0
+          0,
         );
 
         setTotalSales(salesAmount);
@@ -69,7 +68,6 @@ const DashboardPage = () => {
     <div>
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5 mb-6">
-
         {/* Accounts */}
         <Link
           to="/account"
@@ -77,17 +75,13 @@ const DashboardPage = () => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
-                Accounts
-              </p>
+              <p className="text-sm font-medium text-slate-500">Accounts</p>
 
-            <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 whitespace-nowrap">
-  ₹{totalSales.toLocaleString("en-IN")}
-</h3>
+              <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 whitespace-nowrap">
+                ₹{totalSales.toLocaleString("en-IN")}
+              </h3>
 
-              <p className="mt-1 text-xs text-slate-500">
-                Total Sales
-              </p>
+              <p className="mt-1 text-xs text-slate-500">Total Sales</p>
             </div>
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white">
@@ -113,19 +107,13 @@ const DashboardPage = () => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
-                Sales Team
-              </p>
+              <p className="text-sm font-medium text-slate-500">Sales Team</p>
 
               <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                {clientStats?.stats?.total ??
-                  clientStats?.total ??
-                  0}
+                {clientStats?.stats?.total ?? clientStats?.total ?? 0}
               </h3>
 
-              <p className="mt-1 text-xs text-slate-500">
-                Total Clients
-              </p>
+              <p className="mt-1 text-xs text-slate-500">Total Clients</p>
             </div>
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition-all duration-300 group-hover:bg-emerald-600 group-hover:text-white">
@@ -195,9 +183,7 @@ const DashboardPage = () => {
                 {followStats?.upcomingToday?.length ?? 0}
               </h3>
 
-              <p className="mt-1 text-xs text-slate-500">
-                Today's Follow-Ups
-              </p>
+              <p className="mt-1 text-xs text-slate-500">Today's Follow-Ups</p>
             </div>
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition-all duration-300 group-hover:bg-orange-600 group-hover:text-white">
@@ -223,17 +209,11 @@ const DashboardPage = () => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
-                HR
-              </p>
+              <p className="text-sm font-medium text-slate-500">HR</p>
 
-              <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                HR
-              </h3>
+              <h3 className="mt-2 text-2xl font-bold text-slate-900">HR</h3>
 
-              <p className="mt-1 text-xs text-slate-500">
-                HR Management
-              </p>
+              <p className="mt-1 text-xs text-slate-500">HR Management</p>
             </div>
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-50 text-pink-600 transition-all duration-300 group-hover:bg-pink-600 group-hover:text-white">
@@ -259,13 +239,9 @@ const DashboardPage = () => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
-                B2C
-              </p>
+              <p className="text-sm font-medium text-slate-500">B2C</p>
 
-              <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                B2C
-              </h3>
+              <h3 className="mt-2 text-2xl font-bold text-slate-900">B2C</h3>
 
               <p className="mt-1 text-xs text-slate-500">
                 Website + App Orders
@@ -295,9 +271,7 @@ const DashboardPage = () => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
-                Website
-              </p>
+              <p className="text-sm font-medium text-slate-500">Website</p>
 
               <h3 className="mt-2 text-2xl font-bold text-slate-900">
                 Website
@@ -331,13 +305,9 @@ const DashboardPage = () => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
-                Team Access
-              </p>
+              <p className="text-sm font-medium text-slate-500">Team Access</p>
 
-              <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                Users
-              </h3>
+              <h3 className="mt-2 text-2xl font-bold text-slate-900">Users</h3>
 
               <p className="mt-1 text-xs text-slate-500">
                 Approve New Team Logins
@@ -359,7 +329,6 @@ const DashboardPage = () => {
             </span>
           </div>
         </Link>
-
       </div>
     </div>
   );

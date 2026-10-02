@@ -12,8 +12,11 @@ const {
   getClientStats,
   importClientsFromExcel,
   exportClientsToExcel,
+  assignClientLead,
+  getAssignableUsers,
 } = require('../controllers/clientController');
 const { protect, authorize } = require('../middleware/auth');
+const { attachPermissions, requirePermission } = require('../middleware/permission');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -47,22 +50,29 @@ const uploadImportFile = (req, res, next) => {
   });
 };
 
-// Stats route MUST come before /:id routes
-router.get('/stats', protect, getClientStats);
-router.get('/export', protect, authorize('admin', 'sales'), exportClientsToExcel);
-router.post('/import', protect, authorize('admin', 'sales'), uploadImportFile, importClientsFromExcel);
+router.use(protect, attachPermissions);
 
-router.route('/').get(protect, getClients).post(protect, createClient);
+// Stats route MUST come before /:id routes
+router.get('/stats', getClientStats);
+router.get('/assignable-users', getAssignableUsers);
+router.get('/export', authorize('admin', 'sales'), exportClientsToExcel);
+router.post('/import', authorize('admin', 'sales'), uploadImportFile, importClientsFromExcel);
+
+router
+  .route('/')
+  .get(requirePermission('sales-leads', 'view'), getClients)
+  .post(requirePermission('sales-leads', 'create'), createClient);
 
 // More specific nested routes MUST come before /:id route
-router.post('/:id/purchase', protect, addPurchase);
-router.put('/:id/purchase/:purchaseIndex', protect, updatePurchaseStatus);
+router.post('/:id/purchase', requirePermission('sales-leads', 'edit'), addPurchase);
+router.put('/:id/purchase/:purchaseIndex', requirePermission('sales-leads', 'edit'), updatePurchaseStatus);
+router.put('/:id/assign', requirePermission('sales-leads', 'assign'), assignClientLead);
 
 // Generic :id route comes last
 router
   .route('/:id')
-  .get(protect, getClientById)
-  .put(protect, updateClient)
-  .delete(protect, authorize('admin', 'sales'), deleteClient);
+  .get(requirePermission('sales-leads', 'view'), getClientById)
+  .put(requirePermission('sales-leads', 'edit'), updateClient)
+  .delete(requirePermission('sales-leads', 'delete'), deleteClient);
 
 module.exports = router;

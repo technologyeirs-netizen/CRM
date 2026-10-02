@@ -3,6 +3,7 @@ const Employee = require('../models/Employee');
 const bootstrapAdminFromEnv = require('../config/bootstrapAdmin');
 const { generateAndSendOtpToEmail, verifyEmailOtp } = require('../services/otpService');
 const { TEAM_ROLES } = require('../config/roles');
+const { computeEffectivePermissions } = require('../middleware/permission');
 
 // @desc    Public self-registration for a team role. Kept for backward
 //          compatibility, but a self-registered account can never receive a
@@ -184,13 +185,17 @@ exports.login = async (req, res) => {
   }
 };
 
-// @desc    Get current logged-in user
+// @desc    Get current logged-in user (+ their effective, tab-by-tab permissions)
 // @route   GET /api/auth/me
 // @access  Private
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    res.status(200).json({ success: true, user });
+    const user = await User.findById(req.user.id).populate(
+      'customRole',
+      'name team permissions canViewFullRevenue dataScope canManageTeamUsers'
+    );
+    const permissions = await computeEffectivePermissions(user);
+    res.status(200).json({ success: true, user, permissions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

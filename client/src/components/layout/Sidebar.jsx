@@ -204,6 +204,7 @@ const getNavItems = (role) => {
   // Super Admin gets a dedicated approvals panel on top of everything else.
   if (isSuperAdminRole(role)) {
     items.push({ to: '/user-approvals', label: 'User Approvals', icon: FiShield });
+    items.push({ to: '/roles-permissions', label: 'Roles & Permissions', icon: FiShield });
   }
 
   return items;
