@@ -91,6 +91,24 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Optional custom Role (see models/Role.js) that decides this user's
+    // exact tab-by-tab permissions. When not set, the user falls back to
+    // full legacy access within their own `role` team (backward compatible).
+    customRole: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Role',
+      default: null,
+    },
+    // Who this user reports to (their manager / whoever hired them). This
+    // is the backbone of the hierarchy tree: Sales Manager -> Sales
+    // Executive -> ... Defaults to `createdBy` at creation time but can be
+    // re-pointed later (e.g. org re-shuffle) without losing the original
+    // "createdBy" audit trail.
+    reportsTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     avatar: {
       type: String,
       default: '',

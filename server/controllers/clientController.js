@@ -1,6 +1,8 @@
 const Client = require('../models/Client');
+const User = require('../models/User');
 const XLSX = require('xlsx');
 const { logActivity } = require('../utils/activityLogger');
+const { getVisibleUserIds, getDownlineUserIds, isSuperAdminUser } = require('../middleware/permission');
 
 const CLIENT_TRACKED_FIELDS = [
   'firstName',
@@ -89,10 +91,23 @@ exports.getClients = async (req, res) => {
       ];
     }
 
+    // Data-scope gate: a plain Sales Executive / Telecaller (dataScope
+    // 'own') only ever sees leads assigned to themselves. A Sales Manager
+    // (dataScope 'team') sees every lead assigned within their downline,
+    // plus the unassigned pool so they have something to distribute.
+    const visibleUserIds = await getVisibleUserIds(req);
+    if (visibleUserIds) {
+      query.$and = [
+        ...(query.$and || []),
+        { $or: [{ assignedToUser: { $in: visibleUserIds } }, { assignedToUser: null }] },
+      ];
+    }
+
     const [total, clients] = await Promise.all([
       Client.countDocuments(query),
       Client.find(query)
         .populate('assignedTo', 'name email role region')
+        .populate('assignedToUser', 'name email role')
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit))
@@ -461,5 +476,110 @@ exports.exportClientsToExcel = async (req, res) => {
     return res.status(200).send(fileBuffer);
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Assign (or reassign) a lead to a downline user — e.g. a Sales
+//          Manager distributing leads between their Sales Executives and
+//          Telecallers. Only the requester's own team + downline (or
+//          themselves) can be picked as the target, so a manager can never
+//          hand a lead to someone outside their team.
+// @route   PUT /api/clients/:id/assign
+// @access  Private (needs 'assign' permission on sales-leads)
+exports.assignClientLead = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'userId is required' });
+    }
+
+    const client = await Client.findOne({ _id: req.params.id, isDeleted: false }).populate(
+      'assignedToUser',
+      'name email'
+    );
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: 'Target user not found' });
+    }
+
+    if (!isSuperAdminUser(req.user)) {
+      const downlineIds = await getDownlineUserIds(req.user._id);
+      const allowedIds = new Set([String(req.user._id), ...downlineIds]);
+      if (!allowedIds.has(String(targetUser._id))) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only assign leads to people in your own team',
+        });
+      }
+    }
+
+    const oldAssigneeName = client.assignedToUser?.name || 'Unassigned';
+    client.assignedToUser = targetUser._id;
+    await client.save();
+
+    logActivity({
+      req,
+      documentType: 'Client',
+      documentId: client._id,
+      documentNumber: `${client.firstName} ${client.lastName}`.trim(),
+      partyName: `${client.firstName} ${client.lastName}`.trim(),
+      action: 'Edited',
+      changes: [
+        {
+          field: 'assignedToUser',
+          label: 'Assigned To',
+          oldValue: oldAssigneeName,
+          newValue: targetUser.name,
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Lead assigned to ${targetUser.name}`,
+      client,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    List the people the requester is allowed to assign leads to
+//          (themselves + their downline) — used to populate the "Assign
+//          To" dropdown on the Leads screen.
+// @route   GET /api/clients/assignable-users
+// @access  Private
+exports.getAssignableUsers = async (req, res) => {
+  try {
+    const User = require('../models/User');
+    let ids = null;
+    if (!isSuperAdminUser(req.user)) {
+      const downlineIds = await getDownlineUserIds(req.user._id);
+      ids = [String(req.user._id), ...downlineIds];
+    }
+
+    const query = { accountType: 'team', isActive: true, status: 'active' };
+    if (ids) query._id = { $in: ids };
+
+    const users = await User.find(query)
+      .select('name email role customRole')
+      .populate('customRole', 'name')
+      .sort({ name: 1 });
+
+    res.status(200).json({
+      success: true,
+      users: users.map((u) => ({
+        id: u._id,
+        name: u.name,
+        email: u.email,
+        role: u.customRole?.name || u.role,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

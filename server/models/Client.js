@@ -72,6 +72,15 @@ const ClientSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
     },
+    // CRM team-side lead distribution: a Sales Manager assigns this lead to
+    // one of their downline logins (Sales Executive / Telecaller). Separate
+    // from `assignedTo` above (which points at a field-service Employee)
+    // so the two assignment flows never collide.
+    assignedToUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     purchaseHistory: [PurchaseHistorySchema],
     serviceInteractions: [ServiceInteractionSchema],
     totalPurchaseValue: {

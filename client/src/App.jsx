@@ -47,6 +47,7 @@ import { getHomeRoute } from "./config/roles";
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const TeamUsersPage = lazy(() => import("./pages/TeamUsersPage"));
+const RolesPermissionsPage = lazy(() => import("./pages/RolesPermissionsPage"));
 const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const ClientDetailPage = lazy(() => import("./pages/ClientDetailPage"));
 const FollowUpsPage = lazy(() => import("./pages/FollowUpsPage"));
@@ -163,6 +164,7 @@ function App() {
               <Route element={<RoleRoute allow={ROLES.superAdminOnly} />}>
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="user-approvals" element={<TeamUsersPage />} />
+                <Route path="roles-permissions" element={<RolesPermissionsPage />} />
               </Route>
 
               {/* Any team lead + Super Admin: invite/approve colleagues */}

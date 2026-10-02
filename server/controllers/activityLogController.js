@@ -1,4 +1,5 @@
 const ActivityLog = require("../models/ActivityLog");
+const { getVisibleUserIds, isSuperAdminUser } = require("../middleware/permission");
 
 // ============================================
 // GET ACTIVITY LOGS (HISTORY)
@@ -34,6 +35,23 @@ exports.getActivityLogs = async (req, res) => {
 
     if (req.query.userId) {
       filter["user.id"] = req.query.userId;
+    }
+
+    // A team lead / manager only ever sees history for themselves + their
+    // own downline (e.g. a Sales Manager sees what their Sales Executives
+    // and Telecallers did, never other teams). Super Admin and roles with
+    // dataScope 'all' (Account by default) see everything, unrestricted.
+    if (!isSuperAdminUser(req.user) && req.permissions?.dataScope !== "all") {
+      const visibleUserIds = await getVisibleUserIds(req);
+      if (visibleUserIds) {
+        if (filter["user.id"]) {
+          if (!visibleUserIds.includes(String(filter["user.id"]))) {
+            return res.status(403).json({ success: false, message: "You cannot view this user's history" });
+          }
+        } else {
+          filter["user.id"] = { $in: visibleUserIds };
+        }
+      }
     }
 
     if (req.query.startDate || req.query.endDate) {

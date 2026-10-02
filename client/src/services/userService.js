@@ -11,5 +11,7 @@ export const userService = {
   approve: (id) => API.put(`/users/${id}/approve`),
   reject: (id) => API.put(`/users/${id}/reject`),
   setStatus: (id, isActive) => API.put(`/users/${id}/status`, { isActive }),
+  // Super Admin only — change a user's custom Role and/or who they report to.
+  setRole: (id, data) => API.put(`/users/${id}/role`, data),
   remove: (id) => API.delete(`/users/${id}`),
 };

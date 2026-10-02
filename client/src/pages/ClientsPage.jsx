@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiEye, FiSearch, FiUpload, FiDownload, FiClock } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiEye, FiSearch, FiUpload, FiDownload, FiClock, FiUserCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { clientService } from '../services/clientService';
 import Spinner from '../components/common/Spinner';
+import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
 import ClientForm from '../components/clients/ClientForm';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +12,8 @@ import { format } from 'date-fns';
 
 
 const ClientsPage = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, can } = useAuth();
+  const canAssign = can('sales-leads', 'assign');
   const [clients, setClients] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -21,6 +23,44 @@ const ClientsPage = () => {
   const [editData, setEditData] = useState(null);
   const [filters, setFilters] = useState({ search: '', status: '', source: '', page: 1, limit: 10 });
   const fileInputRef = useRef(null);
+
+  // Lead distribution: e.g. a Sales Manager assigning a lead to one of
+  // their Sales Executives / Telecallers.
+  const [assignableUsers, setAssignableUsers] = useState([]);
+  const [assigningClient, setAssigningClient] = useState(null);
+  const [assignTarget, setAssignTarget] = useState('');
+  const [assignSaving, setAssignSaving] = useState(false);
+
+  useEffect(() => {
+    if (!canAssign) return;
+    clientService.getAssignableUsers()
+      .then(({ data }) => setAssignableUsers(Array.isArray(data?.users) ? data.users : []))
+      .catch(() => setAssignableUsers([]));
+  }, [canAssign]);
+
+  const openAssign = (client) => {
+    setAssigningClient(client);
+    setAssignTarget(client.assignedToUser?._id || client.assignedToUser || '');
+  };
+
+  const handleAssignSubmit = async (e) => {
+    e.preventDefault();
+    if (!assignTarget) {
+      toast.error('Please choose someone to assign this lead to');
+      return;
+    }
+    setAssignSaving(true);
+    try {
+      const { data } = await clientService.assignLead(assigningClient._id, assignTarget);
+      toast.success(data?.message || 'Lead assigned');
+      setAssigningClient(null);
+      fetchClients();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to assign lead');
+    } finally {
+      setAssignSaving(false);
+    }
+  };
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -200,6 +240,7 @@ const ClientsPage = () => {
                     <th>Status</th>
                     <th>Source</th>
                     <th>Total Value</th>
+                    <th>Assigned To</th>
                     <th>Added</th>
                     <th>Actions</th>
                   </tr>
@@ -219,6 +260,9 @@ const ClientsPage = () => {
                         <td style={{ fontWeight: 600 }}>
                           {c.totalPurchaseValue > 0 ? `₹${c.totalPurchaseValue.toLocaleString()}` : '—'}
                         </td>
+                        <td style={{ fontSize: 12 }}>
+                          {c.assignedToUser?.name || <span style={{ color: 'var(--text-muted)' }}>Unassigned</span>}
+                        </td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                           {format(new Date(c.createdAt), 'dd MMM yyyy')}
                         </td>
@@ -230,6 +274,11 @@ const ClientsPage = () => {
                             <button className="btn btn-secondary btn-icon btn-sm" onClick={() => openEdit(c)} title="Edit">
                               <FiEdit2 size={14} />
                             </button>
+                            {canAssign && (
+                              <button className="btn btn-secondary btn-icon btn-sm" onClick={() => openAssign(c)} title="Assign">
+                                <FiUserCheck size={14} />
+                              </button>
+                            )}
                             {isAdmin && (
                               <button className="btn btn-danger btn-icon btn-sm" onClick={() => handleDelete(c._id, `${c.firstName} ${c.lastName}`)} title="Delete">
                                 <FiTrash2 size={14} />
@@ -241,7 +290,7 @@ const ClientsPage = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8}>
+                      <td colSpan={9}>
                         <div className="empty-state">
                           <h3>No clients found</h3>
                           <p>Add your first client to get started</p>
@@ -284,6 +333,39 @@ const ClientsPage = () => {
         editData={editData}
         onSaved={fetchClients}
       />
+
+      <Modal
+        isOpen={Boolean(assigningClient)}
+        onClose={() => setAssigningClient(null)}
+        title="Assign Lead"
+        footer={
+          <>
+            <button type="button" className="btn btn-secondary" onClick={() => setAssigningClient(null)}>Cancel</button>
+            <button type="submit" form="assign-lead-form" className="btn btn-primary" disabled={assignSaving}>
+              {assignSaving ? 'Assigning...' : 'Assign'}
+            </button>
+          </>
+        }
+      >
+        <form id="assign-lead-form" onSubmit={handleAssignSubmit}>
+          <p style={{ marginBottom: 12 }}>
+            Assign <strong>{assigningClient?.firstName} {assigningClient?.lastName}</strong> to:
+          </p>
+          <div className="form-group">
+            <select
+              className="form-control"
+              value={assignTarget}
+              onChange={(e) => setAssignTarget(e.target.value)}
+              required
+            >
+              <option value="">Select a team member</option>
+              {assignableUsers.map((u) => (
+                <option key={u.id} value={u.id}>{u.name} — {u.role}</option>
+              ))}
+            </select>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

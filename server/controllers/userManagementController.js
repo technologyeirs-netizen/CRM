@@ -1,6 +1,8 @@
 const User = require('../models/User');
+const Role = require('../models/Role');
 const { TEAM_ROLES, TEAM_LABELS, isSuperAdminRole } = require('../config/roles');
 const { decryptPassword } = require('../utils/passwordCrypto');
+const { getDownlineUserIds, isSuperAdminUser } = require('../middleware/permission');
 
 // Only accounts added through "Add Team User" (Super Admin / team lead invite,
 // bootstrap admin, employee-login sync) should ever show up on the Team
@@ -16,6 +18,16 @@ const shapeUser = (u) => ({
   password: decryptPassword(u.passwordEncrypted),
   role: u.role,
   roleLabel: TEAM_LABELS[u.role] || u.role,
+  customRole: u.customRole
+    ? {
+        id: u.customRole._id || u.customRole,
+        name: u.customRole.name,
+        canViewFullRevenue: u.customRole.canViewFullRevenue,
+        dataScope: u.customRole.dataScope,
+        canManageTeamUsers: u.customRole.canManageTeamUsers,
+      }
+    : null,
+  reportsTo: u.reportsTo,
   status: u.status,
   isActive: u.isActive,
   createdBy: u.createdBy,
@@ -25,16 +37,22 @@ const shapeUser = (u) => ({
 });
 
 // @desc    Create a team login (sub-user).
-//          - Super Admin: can create a user for ANY team, activated instantly.
-//          - Team lead (account/sales/service/delivery/hr/b2c/website): can only
-//            invite people into THEIR OWN team. That account is created with
+//          - Super Admin: can create a user for ANY team, activated instantly,
+//            optionally with a specific customRole, and lands wherever in
+//            the hierarchy they choose (reportsTo).
+//          - Team lead / any downline user with `canManageTeamUsers`: can
+//            only invite people into THEIR OWN team, assigned a Role that
+//            the Super Admin already created for that team (they cannot
+//            invent or widen permissions), and the new hire automatically
+//            reports to them — this is how "Sales Manager hires a Sales
+//            Executive / Telecaller" works. That account is created with
 //            status "pending" and stays locked out until the Super Admin
 //            approves it.
 // @route   POST /api/users
-// @access  Private (any active, non-employee login)
+// @access  Private (any active login with permission to manage team users)
 exports.createTeamUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, customRoleId, reportsTo } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
 
     if (!name || !normalizedEmail || !password) {
@@ -45,22 +63,48 @@ exports.createTeamUser = async (req, res) => {
     }
 
     const requester = req.user;
-    const requesterIsSuperAdmin = Boolean(requester.isAdmin) || isSuperAdminRole(requester.role);
+    const requesterIsSuperAdmin = isSuperAdminUser(requester);
+    const requesterPermissions = req.permissions;
 
     if (!requesterIsSuperAdmin && !TEAM_ROLES.includes(requester.role)) {
       return res.status(403).json({ success: false, message: 'Your account is not permitted to create team users' });
     }
+    if (!requesterIsSuperAdmin && requesterPermissions && !requesterPermissions.canManageTeamUsers) {
+      return res.status(403).json({ success: false, message: 'Your role is not permitted to add team users' });
+    }
 
     let targetRole;
+    let targetCustomRole = null;
+    let targetReportsTo;
+
     if (requesterIsSuperAdmin) {
       targetRole = role;
       if (!TEAM_ROLES.includes(targetRole) && !isSuperAdminRole(targetRole)) {
         return res.status(400).json({ success: false, message: 'Please choose a valid team role' });
       }
+      // Super Admin may place the new hire anywhere in the tree.
+      targetReportsTo = reportsTo || null;
+      if (customRoleId) {
+        targetCustomRole = await Role.findById(customRoleId);
+        if (!targetCustomRole) {
+          return res.status(400).json({ success: false, message: 'Selected role not found' });
+        }
+      }
     } else {
-      // A team lead can only add colleagues into their OWN department,
-      // regardless of what role value is sent from the client.
+      // A team lead / downline manager can only add colleagues into their
+      // OWN department, and the new hire always reports to them directly.
       targetRole = requester.role;
+      targetReportsTo = requester._id;
+
+      if (customRoleId) {
+        targetCustomRole = await Role.findById(customRoleId);
+        if (!targetCustomRole || targetCustomRole.team !== requester.role) {
+          return res.status(400).json({
+            success: false,
+            message: 'Please choose one of the roles available for your team',
+          });
+        }
+      }
     }
 
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -73,6 +117,8 @@ exports.createTeamUser = async (req, res) => {
       email: normalizedEmail,
       password,
       role: targetRole,
+      customRole: targetCustomRole ? targetCustomRole._id : null,
+      reportsTo: targetReportsTo,
       isAdmin: isSuperAdminRole(targetRole),
       isActive: true,
       status: requesterIsSuperAdmin ? 'active' : 'pending',
@@ -97,20 +143,33 @@ exports.createTeamUser = async (req, res) => {
 };
 
 // @desc    List users visible to the requester.
-//          Super Admin sees everyone; a team lead sees only themself and the
-//          people they personally invited into their team.
+//          Super Admin sees everyone; a team lead sees themself plus their
+//          ENTIRE downline (people who report to them, directly or via a
+//          chain of sub-managers) — not just the people they personally
+//          created. A plain team member with 'own' data scope only sees
+//          themself.
 // @route   GET /api/users
 // @access  Private
 exports.getUsers = async (req, res) => {
   try {
     const requester = req.user;
-    const requesterIsSuperAdmin = Boolean(requester.isAdmin) || isSuperAdminRole(requester.role);
+    const requesterIsSuperAdmin = isSuperAdminUser(requester);
 
-    const query = requesterIsSuperAdmin
-      ? { ...TEAM_USER_FILTER }
-      : { ...TEAM_USER_FILTER, $or: [{ _id: requester._id }, { createdBy: requester._id }] };
+    let query;
+    if (requesterIsSuperAdmin) {
+      query = { ...TEAM_USER_FILTER };
+    } else if (req.permissions?.dataScope === 'team' || req.permissions?.canManageTeamUsers) {
+      const downlineIds = await getDownlineUserIds(requester._id);
+      query = { ...TEAM_USER_FILTER, $or: [{ _id: requester._id }, { _id: { $in: downlineIds } }] };
+    } else {
+      query = { ...TEAM_USER_FILTER, _id: requester._id };
+    }
 
-    const users = await User.find(query).select('+passwordEncrypted').sort({ createdAt: -1 });
+    const users = await User.find(query)
+      .select('+passwordEncrypted')
+      .populate('customRole', 'name canViewFullRevenue dataScope canManageTeamUsers')
+      .sort({ createdAt: -1 });
+
     res.status(200).json({ success: true, count: users.length, users: users.map(shapeUser) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -125,6 +184,7 @@ exports.getPendingUsers = async (req, res) => {
     const users = await User.find({ ...TEAM_USER_FILTER, status: 'pending' })
       .select('+passwordEncrypted')
       .populate('createdBy', 'name email role')
+      .populate('customRole', 'name')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -199,6 +259,47 @@ exports.updateUserStatus = async (req, res) => {
     await user.save();
 
     res.status(200).json({ success: true, message: 'User updated', user: shapeUser(user) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Change a user's custom Role and/or who they report to.
+//          Super Admin only — this is exactly the "admin khud permission
+//          dega" control panel.
+// @route   PUT /api/users/:id/role
+// @access  Private/Super Admin
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { customRoleId, reportsTo } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (isSuperAdminRole(user.role)) {
+      return res.status(403).json({ success: false, message: 'Cannot modify a Super Admin account here' });
+    }
+
+    if (customRoleId !== undefined) {
+      if (customRoleId === null) {
+        user.customRole = null;
+      } else {
+        const role = await Role.findById(customRoleId);
+        if (!role || role.team !== user.role) {
+          return res.status(400).json({ success: false, message: "Role must belong to this user's own team" });
+        }
+        user.customRole = role._id;
+      }
+    }
+
+    if (reportsTo !== undefined) {
+      user.reportsTo = reportsTo || null;
+    }
+
+    await user.save();
+    const populated = await User.findById(user._id).populate(
+      'customRole',
+      'name canViewFullRevenue dataScope canManageTeamUsers'
+    );
+    res.status(200).json({ success: true, message: 'User updated', user: shapeUser(populated) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

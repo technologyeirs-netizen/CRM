@@ -305,6 +305,15 @@ const salesInvoiceSchema = new mongoose.Schema(
       default: "Unpaid",
     },
 
+    // Who (which logged-in Account team user) created this invoice — used
+    // to scope revenue visibility: a role without `canViewFullRevenue`
+    // only ever sees/sums invoices where they are the createdBy.
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     // =========================
     // PDF
     // =========================

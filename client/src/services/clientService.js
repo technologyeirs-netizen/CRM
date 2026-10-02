@@ -9,6 +9,10 @@ export const clientService = {
   addPurchase: (id, data) => API.post(`/clients/${id}/purchase`, data),
   updatePurchaseStatus: (clientId, purchaseIndex, status) => API.put(`/clients/${clientId}/purchase/${purchaseIndex}`, { status }),
   getStats: () => API.get('/clients/stats'),
+  // Lead distribution: assign/reassign a lead to someone in your downline
+  // (e.g. Sales Manager -> Sales Executive / Telecaller).
+  assignLead: (id, userId) => API.put(`/clients/${id}/assign`, { userId }),
+  getAssignableUsers: () => API.get('/clients/assignable-users'),
   importExcel: (file) => {
     const formData = new FormData();
     formData.append('file', file);
