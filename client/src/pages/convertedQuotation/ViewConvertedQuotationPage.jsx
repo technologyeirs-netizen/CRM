@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import html2pdf from "html2pdf.js";
+import { downloadInvoicePdf, openInvoicePdf } from "../../utils/invoicePdf";
 import { ArrowLeft, Download, Printer } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -53,39 +53,12 @@ export default function ViewConvertedQuotationPage() {
   };
 
   const downloadPDF = () => {
-    const element = document.getElementById("invoice-template");
-
-    const opt = {
-      margin: 0,
-      filename: `${generateFileName()}.pdf`,
-      image: { type: "jpeg", quality: 1 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    };
-
-    html2pdf().set(opt).from(element).save();
-  };
+  downloadInvoicePdf(generateFileName(), "invoice-template");
+};
 
   const printQuotation = () => {
-    const element = document.getElementById("invoice-template");
-
-    const opt = {
-      margin: 0,
-      filename: "temp.pdf",
-      image: { type: "jpeg", quality: 1 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    };
-
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .toPdf()
-      .get("pdf")
-      .then((pdf) => {
-        window.open(pdf.output("bloburl"), "_blank");
-      });
-  };
+  openInvoicePdf("invoice-template");
+};
 
   return (
     <div className="min-h-screen bg-[#f5f7fb] p-6">
