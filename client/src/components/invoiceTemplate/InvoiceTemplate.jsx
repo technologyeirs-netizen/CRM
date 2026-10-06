@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { toWords } from "number-to-words";
 
 export default function InvoiceTemplate({ invoice }) {
@@ -12,11 +12,80 @@ export default function InvoiceTemplate({ invoice }) {
     .replace(/\b\w/g, (c) => c.toUpperCase()) +
   " Rupees Only";
 
+    // ---------- one-page fit ----------
+    // Rows now take only the height they need. Few items -> a filler row
+    // pushes the totals/footer to the bottom of the A4 page. Many items ->
+    // spacing & font shrink step by step until everything fits one page.
+    const A4_PX = Math.floor((297 * 96) / 25.4) - 2;
+
+    const itemCount = invoice.items?.length || 0;
+    const baseLevel =
+        itemCount <= 8 ? 0 :
+        itemCount <= 14 ? 1 :
+        itemCount <= 20 ? 2 :
+        itemCount <= 28 ? 3 :
+        itemCount <= 38 ? 4 : 5;
+
+    const MAX_LEVEL = 5;
+
+    // stable signature so we only re-fit when the document really changes
+    const sig = [
+        invoice._id,
+        itemCount,
+        invoice.totalAmount,
+        invoice.termsAndConditions?.length || 0,
+    ].join("|");
+
+    const [extraLevel, setExtraLevel] = useState(0);
+    const [fillerPx, setFillerPx] = useState(0);
+
+    const rootRef = useRef(null);
+    const fillerRef = useRef(null);
+
+    const level = Math.min(MAX_LEVEL, baseLevel + extraLevel);
+
+    const DENSITY = [
+        { font: 14, py: 8 },
+        { font: 13, py: 5 },
+        { font: 12, py: 3 },
+        { font: 11, py: 2 },
+        { font: 10, py: 1 },
+        { font: 9, py: 0 },
+    ][level];
+
+    const cellStyle = {
+        paddingTop: DENSITY.py,
+        paddingBottom: DENSITY.py,
+        paddingLeft: 6,
+        paddingRight: 6,
+    };
+
+    useLayoutEffect(() => {
+        setExtraLevel(0);
+    }, [sig]);
+
+    useLayoutEffect(() => {
+        const root = rootRef.current;
+        if (!root) return;
+
+        const currentFiller = fillerRef.current?.offsetHeight || 0;
+        const contentHeight = root.offsetHeight - currentFiller;
+
+        if (contentHeight > A4_PX && level < MAX_LEVEL) {
+            setExtraLevel((e) => e + 1);
+            return;
+        }
+
+        setFillerPx(Math.max(0, A4_PX - contentHeight));
+    }, [sig, level]);
+
     return (
 
         <div
             id="invoice-template"
-            className="bg-white w-[210mm] min-h-[297mm] shadow-xl p-2 rounded text-sm"
+            ref={rootRef}
+            className="bg-white w-[210mm] shadow-xl p-2 rounded text-sm"
+            style={{ fontSize: DENSITY.font }}
         >
 
             {/* ================= HEADER ================= */}
@@ -237,43 +306,43 @@ export default function InvoiceTemplate({ invoice }) {
 
                     <tr className="bg-gray-100 text-sm">
 
-                        <th className="border p-2 w-[7%]">
+                        <th style={cellStyle} className="border w-[7%]">
 
                             S.NO.
 
                         </th>
 
-                        <th className="border p-2 text-left w-[34%]">
+                        <th style={cellStyle} className="border text-left w-[34%]">
 
                             ITEMS
 
                         </th>
 
-                        <th className="border p-2 w-[9%]">
+                        <th style={cellStyle} className="border w-[9%]">
 
                             HSN
 
                         </th>
 
-                        <th className="border p-2 w-[6%]">
+                        <th style={cellStyle} className="border w-[6%]">
 
                             QTY.
 
                         </th>
 
-                        <th className="border p-2 w-[12%]">
+                        <th style={cellStyle} className="border w-[12%]">
 
                             RATE
 
                         </th>
 
-                        <th className="border p-2 w-[10%]">
+                        <th style={cellStyle} className="border w-[10%]">
 
                             TAX
 
                         </th>
 
-                        <th className="border p-2 w-[12%]">
+                        <th style={cellStyle} className="border w-[12%]">
 
                             AMOUNT
 
@@ -291,16 +360,15 @@ export default function InvoiceTemplate({ invoice }) {
 
                             <tr
                                 key={index}
-                                className="h-80"
                             >
 
-                                <td className="border text-center align-top pt-2">
+                                <td style={cellStyle} className="border text-center align-top">
 
                                     {index+1}
 
                                 </td>
 
-                                <td className="border p-2 align-top">
+                                <td style={cellStyle} className="border align-top">
 
                                     <div className="font-semibold">
 
@@ -322,25 +390,25 @@ export default function InvoiceTemplate({ invoice }) {
 
                                 </td>
 
-                                <td className="border text-center align-top pt-2">
+                                <td style={cellStyle} className="border text-center align-top">
 
                                     {item.hsnCode}
 
                                 </td>
 
-                                <td className="border text-center align-top pt-2">
+                                <td style={cellStyle} className="border text-center align-top">
 
                                     {item.qty} PCS
 
                                 </td>
 
-                                <td className="border text-center align-top pt-2">
+                                <td style={cellStyle} className="border text-center align-top">
 
                                     ₹ {Number(item.salesPrice).toLocaleString()}
 
                                 </td>
 
-                                <td className="border text-center align-top pt-2">
+                                <td style={cellStyle} className="border text-center align-top">
 
                                     ₹ {Number(item.taxAmount).toLocaleString()}
 
@@ -354,7 +422,7 @@ export default function InvoiceTemplate({ invoice }) {
 
                                 </td>
 
-                                <td className="border text-center align-top pt-2 font-semibold">
+                                <td style={cellStyle} className="border text-center align-top pt-2 font-semibold">
 
                                     ₹ {Number(item.finalAmount).toLocaleString()}
 
@@ -363,6 +431,28 @@ export default function InvoiceTemplate({ invoice }) {
                             </tr>
 
                         ))
+
+                    }
+
+                    {
+
+                        fillerPx > 4 && (
+
+                            <tr ref={fillerRef} style={{ height: fillerPx }}>
+
+                                {[0,1,2,3,4,5,6].map((i)=>(
+
+                                    <td
+                                        key={i}
+                                        className="border"
+                                        style={{ padding: 0 }}
+                                    ></td>
+
+                                ))}
+
+                            </tr>
+
+                        )
 
                     }
 
