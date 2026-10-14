@@ -2,6 +2,9 @@ import API from '../api/axios';
 
 export const clientService = {
   getAll: (params) => API.get('/clients', { params }),
+  // Party list for billing screens (Invoice / Quotation / Credit Note / Challan).
+  // Does NOT need the Leads tab permission and is not limited to assigned leads.
+  getParties: (params) => API.get('/clients/parties', { params }),
   getById: (id) => API.get(`/clients/${id}`),
   create: (data) => API.post('/clients', data),
   update: (id, data) => API.put(`/clients/${id}`, data),

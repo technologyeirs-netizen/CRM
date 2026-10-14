@@ -148,7 +148,7 @@ try {
 setClientsLoading(true);
 
     const { data } =
-      await clientService.getAll(
+      await clientService.getParties(
         clientFilters
       );
 

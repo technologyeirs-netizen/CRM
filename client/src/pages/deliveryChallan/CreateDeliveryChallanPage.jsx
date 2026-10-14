@@ -275,7 +275,7 @@ export default function CreateDeliveryChallanPage() {
   setClientsLoading(true);
 
   try {
-    const { data } = await clientService.getAll(clientFilters);
+    const { data } = await clientService.getParties(clientFilters);
 
     const clientList = Array.isArray(data?.clients)
       ? data.clients

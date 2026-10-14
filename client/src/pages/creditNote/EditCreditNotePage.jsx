@@ -103,7 +103,7 @@ export default function EditCreditNotePage() {
       setClientsLoading(true);
 
       const { data } =
-        await clientService.getAll(
+        await clientService.getParties(
           clientFilters
         );
 

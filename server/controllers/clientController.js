@@ -127,6 +127,59 @@ exports.getClients = async (req, res) => {
   }
 };
 
+// @desc    Party look-up for billing documents (Invoice, Quotation,
+//          Credit Note, Delivery Challan "Add Party" dropdown)
+// @route   GET /api/clients/parties
+// @access  Private (any role that can create billing documents)
+//
+// WHY THIS EXISTS: GET /api/clients is the *Leads / Clients* tab. It is
+// gated by the sales-leads permission AND scoped to "my assigned leads",
+// so an Account Executive (who has no Leads tab and doesn't own any leads)
+// always got an empty list. Billing needs the full party master, so this
+// endpoint returns every non-deleted client WITHOUT lead-assignment
+// scoping, and only exposes the fields billing screens actually need.
+exports.getBillingParties = async (req, res) => {
+  try {
+    const { search, page = 1, limit = 20 } = req.query;
+    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 1000);
+    const safePage = Math.max(Number(page) || 1, 1);
+
+    const query = { isDeleted: false };
+
+    if (search) {
+      const escaped = String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { firstName: { $regex: escaped, $options: 'i' } },
+        { lastName: { $regex: escaped, $options: 'i' } },
+        { email: { $regex: escaped, $options: 'i' } },
+        { phone: { $regex: escaped, $options: 'i' } },
+        { company: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+
+    const [total, clients] = await Promise.all([
+      Client.countDocuments(query),
+      Client.find(query)
+        .select('firstName lastName email phone alternatePhone company address status totalPurchaseValue')
+        .sort({ firstName: 1, createdAt: -1 })
+        .skip((safePage - 1) * safeLimit)
+        .limit(safeLimit)
+        .lean(),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: clients.length,
+      total,
+      totalPages: Math.ceil(total / safeLimit),
+      currentPage: safePage,
+      clients,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Get single client
 // @route   GET /api/clients/:id
 // @access  Private
