@@ -14,9 +14,10 @@ const {
   exportClientsToExcel,
   assignClientLead,
   getAssignableUsers,
+  getBillingParties,
 } = require('../controllers/clientController');
 const { protect, authorize } = require('../middleware/auth');
-const { attachPermissions, requirePermission } = require('../middleware/permission');
+const { attachPermissions, requirePermission, requireAnyPermission } = require('../middleware/permission');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -55,6 +56,25 @@ router.use(protect, attachPermissions);
 // Stats route MUST come before /:id routes
 router.get('/stats', getClientStats);
 router.get('/assignable-users', getAssignableUsers);
+// Party look-up for billing screens (Add Party dropdown). Must stay ABOVE
+// the /:id routes. Any role that can create/edit a billing document (or can
+// already see Leads) may read the party list - they do NOT need the Leads tab.
+router.get(
+  '/parties',
+  requireAnyPermission([
+    ['account-invoices', 'create'],
+    ['account-invoices', 'edit'],
+    ['account-credit-notes', 'create'],
+    ['account-credit-notes', 'edit'],
+    ['sales-invoices', 'create'],
+    ['sales-quotations', 'create'],
+    ['delivery-challans', 'create'],
+    ['delivery-challans', 'edit'],
+    ['sales-leads', 'view'],
+  ]),
+  getBillingParties
+);
+
 router.get('/export', authorize('admin', 'sales'), exportClientsToExcel);
 router.post('/import', authorize('admin', 'sales'), uploadImportFile, importClientsFromExcel);
 

@@ -137,6 +137,33 @@ function requirePermission(moduleKey, action) {
 }
 
 /**
+ * Route guard: requireAnyPermission([['account-invoices','create'], ['sales-leads','view']])
+ * Passes if the user holds AT LEAST ONE of the listed module+action pairs.
+ * Used for shared look-ups (e.g. the "Add Party" dropdown) that several
+ * different tabs need, so we don't force every team to be given an
+ * unrelated tab just to read the party list.
+ */
+function requireAnyPermission(pairs) {
+  return async (req, res, next) => {
+    try {
+      if (!req.permissions) {
+        req.permissions = await computeEffectivePermissions(req.user);
+      }
+      const allowed = pairs.some(([moduleKey, action]) => canDo(req.permissions, moduleKey, action));
+      if (!allowed) {
+        return res.status(403).json({
+          success: false,
+          message: "You don't have permission to access this data",
+        });
+      }
+      next();
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  };
+}
+
+/**
  * Returns every user id in `managerId`'s downline (people who report to
  * them, directly or transitively), NOT including the manager themselves.
  * Used to scope "team" dataScope queries and to validate that a manager is
@@ -192,6 +219,7 @@ module.exports = {
   computeEffectivePermissions,
   attachPermissions,
   requirePermission,
+  requireAnyPermission,
   canDo,
   getDownlineUserIds,
   getVisibleUserIds,
