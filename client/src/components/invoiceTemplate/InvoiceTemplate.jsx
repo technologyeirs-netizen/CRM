@@ -1,6 +1,15 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { toWords } from "number-to-words";
 
+const fmt = (v) =>
+    Number(v || 0).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
+const fmtWhole = (v) =>
+    Math.round(Number(v || 0)).toLocaleString("en-IN");
+
 export default function InvoiceTemplate({ invoice }) {
 
     const subtotal = invoice.subtotal || invoice.items.reduce(
@@ -404,13 +413,13 @@ export default function InvoiceTemplate({ invoice }) {
 
                                 <td style={cellStyle} className="border text-center align-top">
 
-                                    ₹ {Number(item.salesPrice).toLocaleString()}
+                                    ₹ {fmt(item.salesPrice)}
 
                                 </td>
 
                                 <td style={cellStyle} className="border text-center align-top">
 
-                                    ₹ {Number(item.taxAmount).toLocaleString()}
+                                    ₹ {fmt(item.taxAmount)}
 
                                     <br/>
 
@@ -424,7 +433,7 @@ export default function InvoiceTemplate({ invoice }) {
 
                                 <td style={cellStyle} className="border text-center align-top pt-2 font-semibold">
 
-                                    ₹ {Number(item.finalAmount).toLocaleString()}
+                                    ₹ {fmt(item.finalAmount)}
 
                                 </td>
 
@@ -491,13 +500,13 @@ export default function InvoiceTemplate({ invoice }) {
 
                         <td className="border text-center py-1 text-xs font-semibold">
 
-                            ₹ {Number(invoice.totalTax).toLocaleString()}
+                            ₹ {fmt(invoice.totalTax)}
 
                         </td>
 
                         <td className="border text-center py-1 text-xs font-semibold">
 
-                            ₹ {Number(invoice.totalAmount).toLocaleString()}
+                            ₹ {invoice.autoRoundOff ? fmtWhole(invoice.totalAmount) : fmt(invoice.totalAmount)}
 
                         </td>
 
@@ -522,7 +531,7 @@ export default function InvoiceTemplate({ invoice }) {
 
                         <td className="border text-center py-1 text-xs font-semibold">
 
-                            ₹ {Number(invoice.amountReceived).toLocaleString()}
+                            ₹ {fmt(invoice.amountReceived)}
 
                         </td>
 
@@ -548,7 +557,7 @@ export default function InvoiceTemplate({ invoice }) {
 
                         <td className="border text-center py-1 text-xs font-semibold">
 
-                            ₹ {Number(invoice.balanceAmount).toLocaleString()}
+                            ₹ {fmt(invoice.balanceAmount)}
 
                         </td>
 
@@ -574,7 +583,7 @@ export default function InvoiceTemplate({ invoice }) {
 
                         <td className="border text-center py-1 text-xs font-semibold">
 
-                            ₹ {Number(invoice.totalDiscount).toLocaleString()}
+                            ₹ {fmt(invoice.totalDiscount)}
 
                         </td>
 
@@ -600,7 +609,7 @@ export default function InvoiceTemplate({ invoice }) {
 
                         <td className="border text-center py-1 text-xs font-semibold">
 
-                            ₹ {Number(invoice.roundOffDifference).toLocaleString()}
+                            ₹ {fmt(invoice.roundOffDifference)}
 
                         </td>
 

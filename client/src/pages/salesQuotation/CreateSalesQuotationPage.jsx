@@ -16,6 +16,7 @@ import { categoryService } from "../../services/categoryService";
 import InvoiceHeader from "../../components/invoice/InvoiceHeader";
 import SalesInvoicePartySection from "../../components/invoice/SalesInvoicePartySection";
 import InvoiceItemsTable from "../../components/invoice/InvoiceItemsTable";
+import { formatAddress } from "../../utils/formatAddress";
 import { useInvoiceCalculations } from "../../hooks/useInvoiceCalculations";
 import InvoiceSummarySection from "../../components/invoice/InvoiceSummarySection";
 import InvoiceNotesSection from "../../components/invoice/invoiceNotesSection";
@@ -80,7 +81,9 @@ export default function CreateSalesQuotationPage() {
   const [isTermsOpen, setIsTermsOpen] = useState(true);
   const [globalDiscount, setGlobalDiscount] = useState(0);
   const [additionalCharges, setAdditionalCharges] = useState(0);
-  const [autoRoundOff, setAutoRoundOff] = useState(false);
+  // Quotation ka total hamesha round off (bina decimal) aata hai
+  const autoRoundOff = true;
+  const setAutoRoundOff = () => {};
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Quotations don't apply TCS or collect payment - kept as inert
@@ -225,7 +228,6 @@ export default function CreateSalesQuotationPage() {
       String(pref.currentQuotationNumber ?? 1).padStart(4, "0")
     );
 
-    setAutoRoundOff(pref.autoRoundOff ?? false);
   }, [salesSettings, quotationId]);
 
   // --- Real-time Math Calculations ---
@@ -264,7 +266,7 @@ export default function CreateSalesQuotationPage() {
           }`.trim(),
           phone: selectedParty?.phone || "",
           email: selectedParty?.email || "",
-          address: selectedParty?.address || "",
+          address: formatAddress(selectedParty?.address),
           balance: selectedParty?.balance || 0,
         },
 
@@ -363,7 +365,6 @@ export default function CreateSalesQuotationPage() {
       setNotes(quotation?.notes || "");
       setGlobalDiscount(quotation?.globalDiscount || 0);
       setAdditionalCharges(quotation?.additionalCharges || 0);
-      setAutoRoundOff(quotation?.autoRoundOff || false);
       setSelectedBankDetails(quotation.bankDetails);
     } catch (error) {
       console.log(error);
@@ -553,6 +554,7 @@ export default function CreateSalesQuotationPage() {
             roundOffDifference={roundOffDifference}
             autoRoundOff={autoRoundOff}
             setAutoRoundOff={setAutoRoundOff}
+            lockRoundOff
             hideTCS
             hidePayment
           />

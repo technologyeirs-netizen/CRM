@@ -1,6 +1,7 @@
 // File Name: CreateSalesInvoicePage.jsx
  
 
+import { formatAddress } from "../../utils/formatAddress";
 import { salesInvoiceService } from "../../services/salesInvoiceService";
 import { useSearchParams } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
@@ -324,7 +325,7 @@ useEffect(() => {
       name: `${selectedParty?.firstName || ""} ${selectedParty?.lastName || ""}`.trim(),
       phone: selectedParty?.phone || "",
       email: selectedParty?.email || "",
-      address: selectedParty?.address || "",
+      address: formatAddress(selectedParty?.address),
       balance: selectedParty?.balance || 0,
     },
 
@@ -383,7 +384,7 @@ useEffect(() => {
         }`.trim(),
         phone: selectedParty?.phone || "",
         email: selectedParty?.email || "",
-        address: selectedParty?.address || "",
+        address: formatAddress(selectedParty?.address),
         balance: selectedParty?.balance || 0,
       },
 
