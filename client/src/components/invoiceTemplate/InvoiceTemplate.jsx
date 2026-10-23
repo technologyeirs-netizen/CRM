@@ -1,6 +1,15 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { toWords } from "number-to-words";
 
+const fmt = (v) =>
+    Number(v || 0).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
+const fmtWhole = (v) =>
+    Math.round(Number(v || 0)).toLocaleString("en-IN");
+
 export default function InvoiceTemplate({ invoice }) {
 
     const subtotal = invoice.subtotal || invoice.items.reduce(
@@ -404,13 +413,13 @@ export default function InvoiceTemplate({ invoice }) {
 
                                 <td style={cellStyle} className="border text-center align-top">
 
-                                    ₹ {Number(item.salesPrice).toLocaleString()}
+                                    ₹ {fmt(item.salesPrice)}
 
                                 </td>
 
                                 <td style={cellStyle} className="border text-center align-top">
 
-                                    ₹ {Number(item.taxAmount).toLocaleString()}
+                                    ₹ {fmt(item.taxAmount)}
 
                                     <br/>
 
@@ -424,7 +433,7 @@ export default function InvoiceTemplate({ invoice }) {
 
                                 <td style={cellStyle} className="border text-center align-top pt-2 font-semibold">
 
-                                    ₹ {Number(item.finalAmount).toLocaleString()}
+                                    ₹ {fmt(item.finalAmount)}
 
                                 </td>
 
@@ -440,15 +449,7 @@ export default function InvoiceTemplate({ invoice }) {
 
                             <tr ref={fillerRef} style={{ height: fillerPx }}>
 
-                                {[0,1,2,3,4,5,6].map((i)=>(
-
-                                    <td
-                                        key={i}
-                                        className="border"
-                                        style={{ padding: 0 }}
-                                    ></td>
-
-                                ))}
+                                <td colSpan={7} style={{ padding: 0, border: "none" }}></td>
 
                             </tr>
 
@@ -491,13 +492,13 @@ export default function InvoiceTemplate({ invoice }) {
 
                         <td className="border text-center py-1 text-xs font-semibold">
 
-                            ₹ {Number(invoice.totalTax).toLocaleString()}
+                            ₹ {fmt(invoice.totalTax)}
 
                         </td>
 
                         <td className="border text-center py-1 text-xs font-semibold">
 
-                            ₹ {Number(invoice.totalAmount).toLocaleString()}
+                            ₹ {invoice.autoRoundOff ? fmtWhole(invoice.totalAmount) : fmt(invoice.totalAmount)}
 
                         </td>
 
@@ -505,24 +506,10 @@ export default function InvoiceTemplate({ invoice }) {
 
                     <tr>
 
-                        <td className="border"></td>
+                        <td colSpan={6} className="border text-right pr-2 py-1 text-xs font-semibold">RECEIVED AMOUNT</td>
+<td className="border text-center py-1 text-xs font-semibold">
 
-                        <td className="border text-right pr-2 py-1 text-xs font-semibold">
-                            RECEIVED AMOUNT
-
-                        </td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border text-center py-1 text-xs font-semibold">
-
-                            ₹ {Number(invoice.amountReceived).toLocaleString()}
+                            ₹ {fmt(invoice.amountReceived)}
 
                         </td>
 
@@ -530,25 +517,10 @@ export default function InvoiceTemplate({ invoice }) {
 
                     <tr>
 
-                        <td className="border"></td>
+                        <td colSpan={6} className="border text-right pr-2 py-1 text-xs font-semibold">BALANCE AMOUNT</td>
+<td className="border text-center py-1 text-xs font-semibold">
 
-                        <td className="border text-right pr-2 py-1 text-xs font-semibold">
-
-                            BALANCE AMOUNT
-
-                        </td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border text-center py-1 text-xs font-semibold">
-
-                            ₹ {Number(invoice.balanceAmount).toLocaleString()}
+                            ₹ {fmt(invoice.balanceAmount)}
 
                         </td>
 
@@ -556,25 +528,10 @@ export default function InvoiceTemplate({ invoice }) {
 
                     <tr>
 
-                        <td className="border"></td>
+                        <td colSpan={6} className="border text-right pr-2 py-1 text-xs font-semibold">DISCOUNT</td>
+<td className="border text-center py-1 text-xs font-semibold">
 
-                        <td className="border text-right pr-2 py-1 text-xs font-semibold">
-
-                            DISCOUNT
-
-                        </td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border text-center py-1 text-xs font-semibold">
-
-                            ₹ {Number(invoice.totalDiscount).toLocaleString()}
+                            ₹ {fmt(invoice.totalDiscount)}
 
                         </td>
 
@@ -582,25 +539,10 @@ export default function InvoiceTemplate({ invoice }) {
 
                     <tr>
 
-                        <td className="border"></td>
+                        <td colSpan={6} className="border text-right pr-2 py-1 text-xs font-semibold">ROUND OFF</td>
+<td className="border text-center py-1 text-xs font-semibold">
 
-                        <td className="border text-right pr-2 py-1 text-xs font-semibold">
-
-                            ROUND OFF
-
-                        </td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border"></td>
-
-                        <td className="border text-center py-1 text-xs font-semibold">
-
-                            ₹ {Number(invoice.roundOffDifference).toLocaleString()}
+                            ₹ {fmt(invoice.roundOffDifference)}
 
                         </td>
 

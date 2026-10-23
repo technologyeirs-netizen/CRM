@@ -30,6 +30,7 @@ export default function InvoiceSummarySection({
   // Round Off
   autoRoundOff,
   setAutoRoundOff,
+  lockRoundOff = false,
 
   // Payment
   markAsPaid,
@@ -193,6 +194,7 @@ onChange={(e) => setGlobalDiscount(Number(e.target.value))}
                   <input
                     type="checkbox"
                     checked={autoRoundOff}
+                    disabled={lockRoundOff}
                     onChange={(e) => setAutoRoundOff(e.target.checked)}
                     className="w-4 h-4"
                   />
@@ -212,7 +214,7 @@ onChange={(e) => setGlobalDiscount(Number(e.target.value))}
               </span>
               <input
                 type="text"
-                value={`₹ ${totalAmount}`}
+                value={`₹ ${autoRoundOff ? Math.round(totalAmount) : Number(totalAmount).toFixed(2)}`}
                 disabled
                 className="bg-gray-200 border border-gray-300 text-right px-3 py-1.5 rounded text-gray-700 font-bold w-48 text-sm outline-none"
               />

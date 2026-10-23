@@ -1,4 +1,6 @@
-import { Trash2 } from "lucide-react";
+import { Trash2, RotateCcw } from "lucide-react";
+import { useRef } from "react";
+import EditableNumberInput from "../common/EditableNumberInput";
 
 export default function InvoiceItemsTable({
   invoiceItems,
@@ -9,6 +11,25 @@ export default function InvoiceItemsTable({
   subtotal,
   setShowItemModal,
 }) {
+  // Har item ki starting price / discount / tax yaad rakhte hain
+  // taaki "Reset" se wapas original values aa sakein.
+  const originalsRef = useRef({});
+  invoiceItems.forEach((it) => {
+    if (!originalsRef.current[it._id]) {
+      originalsRef.current[it._id] = {
+        salesPrice: it.salesPrice || 0,
+        discountOnSalesPrice: it.discountOnSalesPrice || 0,
+        tax: it.tax || it.gstTaxRate || 0,
+      };
+    }
+  });
+
+  const handleResetItem = (idx, item) => {
+    const orig = originalsRef.current[item._id];
+    if (!orig) return;
+    updateItem(idx, { ...orig });
+  };
+
   // Update a single field on one invoice item
   const updateItem = (idx, changes) => {
     setInvoiceItems((prev) =>
@@ -72,7 +93,8 @@ export default function InvoiceItemsTable({
 
     if (newPrice < 0) newPrice = 0;
 
-    updateItem(idx, { salesPrice: Number(newPrice.toFixed(2)) });
+    // 4 decimal tak rakhte hain taaki amount exactly wahi aaye jo type kiya
+    updateItem(idx, { salesPrice: Number(newPrice.toFixed(4)) });
   };
 
   return (
@@ -186,14 +208,10 @@ export default function InvoiceItemsTable({
     
                             {/* Price/Item - editable */}
                             <td className="p-3 pt-4">
-                              <input
-                                type="number"
-                                min={0}
-                                step="0.01"
+                              <EditableNumberInput
+                                integer
                                 value={itemPrice}
-                                onChange={(e) =>
-                                  handlePriceChange(idx, e.target.value)
-                                }
+                                onValueChange={(v) => handlePriceChange(idx, v)}
                                 className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium px-2.5 py-1 rounded w-full max-w-[110px] text-right border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-200"
                               />
                             </td>
@@ -201,15 +219,10 @@ export default function InvoiceItemsTable({
                             {/* Discount - editable */}
                             <td className="p-3 pt-4 border-l border-gray-100">
                               <div className="space-y-1">
-                                <input
-                                  type="number"
-                                  min={0}
+                                <EditableNumberInput
                                   max={100}
-                                  step="0.01"
                                   value={item.discountOnSalesPrice || 0}
-                                  onChange={(e) =>
-                                    handleDiscountChange(idx, e.target.value)
-                                  }
+                                  onValueChange={(v) => handleDiscountChange(idx, v)}
                                   className="border border-rose-100 bg-rose-50 text-rose-600 font-semibold text-xs px-2.5 py-1.5 rounded-md w-20 outline-none focus:ring-2 focus:ring-rose-200"
                                 />
 
@@ -222,14 +235,9 @@ export default function InvoiceItemsTable({
                             {/* Tax - editable */}
                             <td className="p-3 pt-4 text-gray-600">
                               {/* Tax % */}
-                              <input
-                                type="number"
-                                min={0}
-                                step="0.01"
+                              <EditableNumberInput
                                 value={item.tax || item.gstTaxRate || 0}
-                                onChange={(e) =>
-                                  handleTaxChange(idx, e.target.value)
-                                }
+                                onValueChange={(v) => handleTaxChange(idx, v)}
                                 className="border border-gray-200 rounded px-2 py-1 w-20 bg-white text-gray-700 text-sm mb-1 outline-none focus:ring-2 focus:ring-indigo-200"
                               />
     
@@ -241,13 +249,10 @@ export default function InvoiceItemsTable({
     
                             {/* Total Calculated Item Amount - editable, back-calculates price */}
                             <td className="p-3 pt-4">
-                              <input
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                value={finalAmount.toFixed(2)}
-                                onChange={(e) =>
-                                  handleAmountChange(idx, item, e.target.value)
+                              <EditableNumberInput
+                                value={finalAmount}
+                                onValueChange={(v) =>
+                                  handleAmountChange(idx, item, v)
                                 }
                                 className="bg-[#e9ecef]/60 text-gray-800 font-semibold px-2.5 py-1 rounded w-full max-w-[120px] text-right border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-200"
                               />
@@ -255,6 +260,14 @@ export default function InvoiceItemsTable({
     
                             {/* Actions/Delete Button */}
                             <td className="p-3 pt-4 text-center">
+                              <button
+                                type="button"
+                                title="Reset price / discount / tax"
+                                onClick={() => handleResetItem(idx, item)}
+                                className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition mb-1"
+                              >
+                                <RotateCcw size={15} />
+                              </button>
                               <button
                                 onClick={() =>
                                   setInvoiceItems(
