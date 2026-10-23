@@ -209,7 +209,7 @@ export default function InvoiceItemsTable({
                             {/* Price/Item - editable */}
                             <td className="p-3 pt-4">
                               <EditableNumberInput
-                                decimals={4}
+                                integer
                                 value={itemPrice}
                                 onValueChange={(v) => handlePriceChange(idx, v)}
                                 className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium px-2.5 py-1 rounded w-full max-w-[110px] text-right border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-200"

@@ -17,25 +17,33 @@ export default function EditableNumberInput({
   value,
   onValueChange,
   decimals = 2,
+  integer = false, // true => sirf whole number, spinner (▲▼) 1-1 se badhega
   min = 0,
   max,
   className = "",
   ...rest
 }) {
-  const [draft, setDraft] = useState(toText(value, decimals));
+  const dec = integer ? 0 : decimals;
+  const [draft, setDraft] = useState(toText(value, dec));
   const focused = useRef(false);
+  const justFocused = useRef(false);
 
   // Jab tak user type kar raha hai draft ko mat chhedo;
   // bahar se value badle (reset / amount back-calc) to sync karo.
   useEffect(() => {
-    if (!focused.current) setDraft(toText(value, decimals));
-  }, [value, decimals]);
+    if (!focused.current) setDraft(toText(value, dec));
+  }, [value, dec]);
 
   const handleChange = (e) => {
-    const text = e.target.value;
+    let text = e.target.value;
 
-    // sirf digits aur ek decimal point allow
-    if (!/^\d*\.?\d*$/.test(text)) return;
+    if (integer) {
+      // decimal part hata do: 12.7 -> 12
+      text = text.split(".")[0].replace(/[^\d]/g, "");
+    } else if (!/^\d*\.?\d*$/.test(text)) {
+      // sirf digits aur ek decimal point allow
+      return;
+    }
 
     setDraft(text);
 
@@ -53,18 +61,29 @@ export default function EditableNumberInput({
   return (
     <input
       {...rest}
-      type="text"
-      inputMode="decimal"
+      type={integer ? "number" : "text"}
+      inputMode={integer ? "numeric" : "decimal"}
+      {...(integer ? { step: 1, min } : {})}
       value={draft}
       placeholder={rest.placeholder ?? "0"}
       onFocus={(e) => {
         focused.current = true;
-        e.target.select();
+        justFocused.current = true;
+        e.target.select(); // ek hi baar mein poora select
         rest.onFocus?.(e);
+      }}
+      onMouseUp={(e) => {
+        // click ke baad browser selection hata deta hai; pehli click par rok do
+        if (justFocused.current) {
+          e.preventDefault();
+          justFocused.current = false;
+        }
+        rest.onMouseUp?.(e);
       }}
       onBlur={(e) => {
         focused.current = false;
-        setDraft(toText(value, decimals));
+        justFocused.current = false;
+        setDraft(toText(value, dec));
         rest.onBlur?.(e);
       }}
       onChange={handleChange}
