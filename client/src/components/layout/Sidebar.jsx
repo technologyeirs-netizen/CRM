@@ -64,7 +64,7 @@ const MODULE_BLOCKS = [
       { to: '/delivery-challan', label: 'Delivery Challan', icon: FiTruck },
       { to: '/history', label: 'History', icon: FiClock },
       { to: '/sales-settings', label: 'Account Settings', icon: FiPackage },
-      { to: '/sales-quotations', label: 'Invoice Quotation', icon: FiFileText },
+      { to: '/sales-quotations', label: 'Quotation', icon: FiFileText },
     ],
   },
   {
